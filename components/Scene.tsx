@@ -1,10 +1,19 @@
-import React, { Suspense, useRef, useState } from 'react';
+import React, { Suspense, useRef, useState, useMemo } from 'react';
 import { Canvas, useFrame, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Stars, Environment, ContactShadows, Float } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import ChristmasTree from './Tree';
+import Fireworks from './Fireworks';
+import Santa from './Santa';
+import GiftBox from './GiftBox';
+import Aurora from './Aurora';
+import Reindeer from './Reindeer';
+import SnowGlobe from './SnowGlobe';
+import HeartPhotoFrame from './HeartPhotoFrame';
+import CameraController from './CameraController';
 import { Memory } from '../types';
+import { getPerformanceConfig } from '../utils/performance';
 
 // --- Snow with Wind & Repulsion & Easter Egg ---
 const Snow: React.FC<{ count: number, wind: [number, number], repelPoint: THREE.Vector3 | null }> = ({ count, wind, repelPoint }) => {
@@ -113,13 +122,44 @@ interface SceneProps {
   onMemoryClick: (m: Memory) => void;
   windDirection: [number, number];
   treeShake?: boolean;
+  showFireworks?: boolean;
+  onGiftOpen?: () => void;
+  onTreeDoubleClick?: () => void;
+  heartPhotoUrl?: string;
+  onHeartPhotoClick?: () => void;
+  currentHeartPhotoIndex?: number;
 }
 
-const Scene: React.FC<SceneProps> = ({ isDesktop, memories, onMemoryClick, windDirection, treeShake = false }) => {
+const Scene: React.FC<SceneProps> = ({ 
+  isDesktop, 
+  memories, 
+  onMemoryClick, 
+  windDirection, 
+  treeShake = false,
+  showFireworks = false,
+  onGiftOpen,
+  onTreeDoubleClick,
+  heartPhotoUrl,
+  onHeartPhotoClick,
+  currentHeartPhotoIndex = 0
+}) => {
   const treePosition: [number, number, number] = isDesktop ? [-2, -1.5, 0] : [0, -2, 0];
   const [repelPoint, setRepelPoint] = useState<THREE.Vector3 | null>(null);
   const [ripplePos, setRipplePos] = useState<THREE.Vector3>(new THREE.Vector3(0,0,0));
   const [rippleActive, setRippleActive] = useState(false);
+  const [fireworksPositions] = useState<Array<[number, number, number]>>(() => {
+    // Multiple firework positions
+    return [
+      [0, 3, 0],
+      [-2, 4, -1],
+      [2, 4, 1],
+      [-1, 5, 1],
+      [1, 5, -1]
+    ];
+  });
+  
+  // Adaptive performance config
+  const perfConfig = useMemo(() => getPerformanceConfig(), []);
 
   const handleBackgroundClick = (e: ThreeEvent<MouseEvent>) => {
       const point = e.point;
@@ -135,21 +175,60 @@ const Scene: React.FC<SceneProps> = ({ isDesktop, memories, onMemoryClick, windD
   };
 
   return (
-    <div className="w-full h-full absolute inset-0 z-0 bg-gradient-to-b from-[#020617] via-[#1e1b4b] to-[#4c1d95]">
-      <Canvas shadows camera={{ position: [0, 2, 9], fov: 45 }}>
-        <color attach="background" args={['#020617']} />
-        <fog attach="fog" args={['#020617', 5, 30]} />
+    <div className="w-full h-full absolute inset-0 z-0 bg-gradient-to-b from-[#0a0a1a] via-[#1a0a2e] to-[#2d1b4e]">
+      <Canvas shadows camera={{ position: [0, 0, 12], fov: isDesktop ? 50 : 55 }}>
+        <color attach="background" args={['#0a0a1a']} />
+        <fog attach="fog" args={['#0a0a1a', 8, 25]} />
         
-        {/* Lights */}
-        <ambientLight intensity={0.2} color="#4c1d95" />
-        <spotLight position={[5, 5, 5]} angle={0.25} penumbra={1} intensity={10} castShadow color="#f0abfc" />
-        <pointLight position={[-5, 2, -5]} intensity={5} color="#38bdf8" />
-        <pointLight position={[0, -2, 3]} intensity={3} color="#facc15" />
+        {/* Camera Controller - Card opening animation */}
+        <CameraController isDesktop={isDesktop} />
+        
+        {/* Enhanced Lights for Snow Globe */}
+        <ambientLight intensity={0.3} color="#ffffff" />
+        <spotLight position={[0, 8, 5]} angle={0.4} penumbra={1} intensity={15} castShadow color="#ffffff" />
+        <pointLight position={[-5, 3, -5]} intensity={8} color="#f0abfc" />
+        <pointLight position={[5, 3, -5]} intensity={8} color="#38bdf8" />
+        <pointLight position={[0, -3, 3]} intensity={5} color="#facc15" />
+        <directionalLight position={[0, 10, 5]} intensity={0.5} color="#ffffff" />
 
         <Suspense fallback={null}>
-            <group position={treePosition} className={treeShake ? 'animate-[treeShake_0.2s_ease-in-out]' : ''}>
-                <ChristmasTree memories={memories} onOrnamentClick={onMemoryClick} />
-            </group>
+            {/* Snow Globe Container */}
+            <SnowGlobe position={[0, 0, 0]}>
+                {/* Aurora Northern Lights - Inside globe (adaptive) */}
+                {perfConfig.enableAurora && <Aurora intensity={0.8} />}
+                
+                {/* Heart Photo Frame - Inside globe, closer to camera */}
+                {heartPhotoUrl && (
+                  <HeartPhotoFrame 
+                    position={isDesktop ? [3, 1.5, -2] : [2.5, 1, -1.5]} 
+                    imageUrl={heartPhotoUrl}
+                    onPhotoClick={onHeartPhotoClick}
+                    currentIndex={currentHeartPhotoIndex}
+                    totalImages={5}
+                  />
+                )}
+                
+                {/* Christmas Tree - Centered */}
+                <group position={treePosition} className={treeShake ? 'animate-[treeShake_0.2s_ease-in-out]' : ''}>
+                    <ChristmasTree memories={memories} onOrnamentClick={onMemoryClick} onDoubleClick={onTreeDoubleClick} />
+                </group>
+                
+                {/* Gift Box - Inside globe */}
+                <GiftBox position={isDesktop ? [-2, -0.5, 2] : [-1.5, -1, 1.5]} onOpen={onGiftOpen} />
+                
+                {/* Fireworks - Inside globe */}
+                {showFireworks && fireworksPositions.map((pos, i) => (
+                  <Fireworks key={i} active={showFireworks} position={pos} />
+                ))}
+            </SnowGlobe>
+            
+            {/* Elements outside globe */}
+            {/* Reindeer flying around - Outside globe */}
+            <Reindeer position={[0, 0, 0]} radius={10} speed={0.3} />
+            <Reindeer position={[0, 0, 0]} radius={11} speed={0.25} />
+            
+            {/* Santa Claus - Outside globe */}
+            <Santa position={isDesktop ? [7, 2, -6] : [6, 1.5, -5]} />
             
             {/* Clickable Background Plane for Interactions */}
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -4, 0]} receiveShadow onPointerDown={handleBackgroundClick}>
@@ -166,25 +245,34 @@ const Scene: React.FC<SceneProps> = ({ isDesktop, memories, onMemoryClick, windD
                </mesh>
             </Float>
 
-            <Snow count={400} wind={windDirection} repelPoint={repelPoint} />
-            <Stars radius={100} depth={50} count={3000} factor={6} saturation={1} fade speed={1.5} />
-            <Environment preset="city" />
-            <ContactShadows position={[0, -4, 0]} opacity={0.6} scale={20} blur={2.5} far={4} color="#000" />
+            {/* Snow - Adaptive count based on device */}
+            <Snow count={perfConfig.snow} wind={windDirection} repelPoint={repelPoint} />
+            <Stars radius={100} depth={50} count={perfConfig.stars} factor={8} saturation={1.5} fade speed={2} />
+            <Environment preset="sunset" />
+            {perfConfig.enableShadows && (
+              <ContactShadows position={[0, -4, 0]} opacity={0.8} scale={20} blur={3} far={4} color="#000" />
+            )}
         </Suspense>
 
         <OrbitControls 
             enablePan={false} 
-            enableZoom={false}
+            enableZoom={true}
+            minDistance={7}
+            maxDistance={15}
             minPolarAngle={Math.PI / 3} 
             maxPolarAngle={Math.PI / 1.8}
             autoRotate={true}
-            autoRotateSpeed={0.5}
+            autoRotateSpeed={0.3}
+            enableDamping={true}
+            dampingFactor={0.05}
         />
 
-        <EffectComposer>
+        {perfConfig.enableBloom && (
+          <EffectComposer>
             <Bloom luminanceThreshold={1} mipmapBlur intensity={1.5} radius={0.6} />
             <Vignette eskil={false} offset={0.1} darkness={1.1} />
-        </EffectComposer>
+          </EffectComposer>
+        )}
       </Canvas>
     </div>
   );

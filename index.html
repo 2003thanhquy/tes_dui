@@ -4,12 +4,74 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Noel Yêu Thương 3D</title>
+    
+    <!-- Preconnect to Google Fonts for faster loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Montserrat:wght@300;400;600&family=Great+Vibes&display=swap" rel="stylesheet">
+    
+    <!-- Load Google Fonts with Vietnamese character support -->
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Montserrat:wght@300;400;600&family=Great+Vibes&display=swap&subset=vietnamese,latin" rel="stylesheet">
+    
+    <!-- Fallback fonts CSS (loaded after Google Fonts) -->
+    <link rel="stylesheet" href="/fonts.css">
     <style>
-      body { margin: 0; overflow: hidden; font-family: 'Montserrat', sans-serif; background-color: #0f172a; }
-      .font-script { font-family: 'Dancing Script', cursive; }
-      .font-vibes { font-family: 'Great Vibes', cursive; }
+      /* Font loading optimization with fallbacks */
+      body { 
+        margin: 0; 
+        overflow: hidden; 
+        font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; 
+        background-color: #0f172a;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        font-feature-settings: "kern" 1;
+        font-kerning: normal;
+      }
+      
+      .font-script { 
+        font-family: 'Dancing Script', 'Brush Script MT', 'Lucida Handwriting', 'Comic Sans MS', cursive;
+        font-display: swap;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      
+      .font-vibes { 
+        font-family: 'Great Vibes', 'Brush Script MT', 'Lucida Handwriting', 'Comic Sans MS', cursive;
+        font-display: swap;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      
+      /* Force font rendering consistency across all elements */
+      * {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+      }
+      
+      /* Ensure Vietnamese characters render correctly */
+      @supports (font-variation-settings: normal) {
+        body {
+          font-variation-settings: normal;
+        }
+      }
+      
+      /* Image quality optimization */
+      img {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+        image-rendering: auto;
+      }
+      
+      /* High DPI display optimization */
+      @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+        img {
+          image-rendering: -webkit-optimize-contrast;
+          image-rendering: auto;
+        }
+      }
       
       @keyframes floatUp {
         0% { transform: translateY(0) scale(0.5); opacity: 0; }

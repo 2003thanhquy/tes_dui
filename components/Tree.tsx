@@ -3,6 +3,8 @@ import { useFrame, ThreeEvent, extend } from '@react-three/fiber';
 import { Sparkles, Html, Float, shaderMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 import { Memory } from '../types';
+import LightParticles from './LightParticles';
+import { playBellSound, playSparkleSound } from '../utils/soundEffects';
 
 // --- Custom Magical Tree Material ---
 const MagicalTreeMaterial = shaderMaterial(
@@ -175,6 +177,7 @@ const Ornament: React.FC<OrnamentProps> = ({ position, color: initialColor, type
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
       e.stopPropagation();
+      playSparkleSound(); // Sound effect for ornament click
       setClicked(true);
       setTimeout(() => setClicked(false), 400); // Increased duration for better visual
 
@@ -256,13 +259,18 @@ const Ornament: React.FC<OrnamentProps> = ({ position, color: initialColor, type
                     <planeGeometry args={[0.7, 0.7]} />
                     <meshBasicMaterial color="#fff" />
                      <Html transform position={[0, 0, 0.01]} style={{ pointerEvents: 'none' }}>
-                         <div className={`w-20 h-20 bg-white p-1 shadow-[0_0_15px_rgba(255,215,0,0.6)] transition-all duration-300 border border-yellow-500 rounded-sm overflow-hidden ${clicked ? 'brightness-125 sepia' : ''}`}>
+                         <div className={`w-24 h-24 md:w-28 md:h-28 bg-white p-1 shadow-[0_0_15px_rgba(255,215,0,0.6)] transition-all duration-300 border border-yellow-500 rounded-sm overflow-hidden ${clicked ? 'brightness-125 sepia' : ''}`}>
                              <img 
                                 src={memoryData.url} 
                                 alt="Memory" 
-                                className="w-full h-full object-cover" 
+                                className="w-full h-full object-cover"
+                                style={{
+                                  imageRendering: '-webkit-optimize-contrast' as any
+                                }}
+                                loading="eager"
+                                decoding="async"
                                 onError={(e) => {
-                                    e.currentTarget.src = "https://images.unsplash.com/photo-1512474932049-78ea796b5f4d?q=80&w=200&auto=format&fit=crop";
+                                    e.currentTarget.src = "https://images.unsplash.com/photo-1512474932049-78ea796b5f4d?q=80&w=400&auto=format&fit=crop";
                                 }}
                              />
                          </div>
@@ -295,21 +303,32 @@ const Ornament: React.FC<OrnamentProps> = ({ position, color: initialColor, type
 interface ChristmasTreeProps {
     memories: Memory[];
     onOrnamentClick: (m: Memory) => void;
+    onDoubleClick?: () => void;
 }
 
-const ChristmasTree: React.FC<ChristmasTreeProps> = ({ memories, onOrnamentClick }) => {
+const ChristmasTree: React.FC<ChristmasTreeProps> = ({ memories, onOrnamentClick, onDoubleClick }) => {
   const groupRef = useRef<THREE.Group>(null);
   const [lightColorIndex, setLightColorIndex] = useState(0);
   const [scaleSpring, setScaleSpring] = useState(1);
   const [showBurst, setShowBurst] = useState(false);
+  const [showLightParticles, setShowLightParticles] = useState(false);
+  const [treeBounce, setTreeBounce] = useState(false);
 
-  // Tree Click Interaction
+  // Tree Click Interaction - Enhanced with sound
   const handleTreeClick = (e: ThreeEvent<MouseEvent>) => {
       e.stopPropagation();
+      playBellSound(); // Sound effect
       setLightColorIndex(prev => prev + 1);
-      // More pronounced spring
-      setScaleSpring(1.1);
-      setTimeout(() => setScaleSpring(1), 250);
+      // Enhanced bounce effect
+      setTreeBounce(true);
+      setScaleSpring(1.15);
+      setTimeout(() => {
+        setScaleSpring(1.05);
+        setTimeout(() => setScaleSpring(1), 200);
+      }, 150);
+      // Light particles
+      setShowLightParticles(true);
+      setTimeout(() => setShowLightParticles(false), 1000);
   };
 
   const handleTreeDoubleClick = (e: ThreeEvent<MouseEvent>) => {
@@ -319,13 +338,26 @@ const ChristmasTree: React.FC<ChristmasTreeProps> = ({ memories, onOrnamentClick
       // Pop effect
       setScaleSpring(1.2);
       setTimeout(() => setScaleSpring(1), 300);
+      // Trigger fireworks
+      if (onDoubleClick) {
+          onDoubleClick();
+      }
   };
 
   useFrame((state) => {
     if (groupRef.current) {
       groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.1) * 0.05;
-      // Spring elastic interpolation
-      groupRef.current.scale.lerp(new THREE.Vector3(scaleSpring, scaleSpring, scaleSpring), 0.2);
+      // Enhanced spring elastic interpolation with bounce
+      let targetScale = scaleSpring;
+      if (treeBounce) {
+        const bounceTime = state.clock.elapsedTime * 15;
+        targetScale += Math.sin(bounceTime) * 0.08;
+        // Stop bounce after animation
+        if (bounceTime > Math.PI * 2) {
+          setTreeBounce(false);
+        }
+      }
+      groupRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.15);
     }
   });
 
@@ -381,6 +413,13 @@ const ChristmasTree: React.FC<ChristmasTreeProps> = ({ memories, onOrnamentClick
     >
       {/* Heart Burst Effect */}
       <HeartBurst active={showBurst} />
+
+      {/* Light Particles - Fly up on click */}
+      <LightParticles 
+        active={showLightParticles} 
+        position={[0, 2, 0]} 
+        color={['#ef4444', '#facc15', '#ec4899', '#3b82f6', '#8b5cf6'][lightColorIndex % 5]}
+      />
 
       {/* Dynamic Lights */}
       <TreeLights colorIndex={lightColorIndex} />

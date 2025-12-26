@@ -1,19 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Scene from './components/Scene';
 import Overlay from './components/Overlay';
+import LoadingScreen from './components/LoadingScreen';
 import { generateRomanticWish } from './services/geminiService';
 import { WishState, MusicState, ClickEffect, LoveMessage, CountdownTime, OrnamentClickEffect, Gift } from './types';
+import { playPopSound, playSuccessSound } from './utils/soundEffects';
 
-// --- SPECIAL GIFT MESSAGES --- (Ngắn gọn, 1 message mỗi lần)
+// --- SPECIAL GIFT MESSAGES --- (Dài hơn, cảm động hơn)
 const GIFT_MESSAGES = [
-  { emoji: "💝", message: "Anh yêu em nhiều hơn em tưởng! ❤️" },
-  { emoji: "🎁", message: "Món quà tuyệt nhất là được yêu em mỗi ngày! 💕" },
-  { emoji: "💌", message: "Em là điều ước Giáng sinh của anh! ✨" },
-  { emoji: "🌹", message: "Anh muốn cùng em đi qua mọi mùa! 🌸" },
-  { emoji: "⭐", message: "Em là ngôi sao sáng nhất của anh! 🌟" },
-  { emoji: "🎄", message: "Mãi mãi bên em! 🎅" },
-  { emoji: "💖", message: "Mỗi khoảnh khắc bên em đều là món quà! 🙏" },
-  { emoji: "🎀", message: "Em là người đặc biệt nhất! 💝" }
+  { emoji: "💝", message: "Anh yêu em nhiều hơn em tưởng! Mỗi ngày bên em đều là một món quà quý giá. ❤️" },
+  { emoji: "🎁", message: "Món quà tuyệt nhất là được yêu em mỗi ngày! Anh cảm ơn em vì đã đến bên anh. 💕" },
+  { emoji: "💌", message: "Em là điều ước Giáng sinh của anh! Anh muốn cùng em đi qua mọi mùa đông ấm áp. ✨" },
+  { emoji: "🌹", message: "Anh muốn cùng em đi qua mọi mùa! Tình yêu của chúng ta đẹp hơn cả hoa hồng. 🌸" },
+  { emoji: "⭐", message: "Em là ngôi sao sáng nhất của anh! Em làm cho cuộc đời anh trở nên rực rỡ. 🌟" },
+  { emoji: "🎄", message: "Mãi mãi bên em! Giáng sinh này và mọi Giáng sinh sau, anh đều muốn ở bên em. 🎅" },
+  { emoji: "💖", message: "Mỗi khoảnh khắc bên em đều là món quà! Anh trân trọng từng giây phút chúng ta có nhau. 🙏" },
+  { emoji: "🎀", message: "Em là người đặc biệt nhất! Anh yêu em từ tận đáy lòng và sẽ mãi mãi như vậy. 💝" }
 ];
 
 // --- GALLERY IMAGES ---
@@ -104,10 +106,14 @@ const App: React.FC = () => {
   const hasInteractedRef = useRef(false);
 
   // --- Interaction & Game State ---
-  const [clickCount, setClickCount] = useState(0); // Giữ lại để tracking nếu cần sau này
+  const [clickCount, setClickCount] = useState(0); // Tracking clicks for secret message
   const [windDirection, setWindDirection] = useState<[number, number]>([0, 0]);
   const [treeShake, setTreeShake] = useState(false);
   const [randomAnimationType, setRandomAnimationType] = useState<'orb' | 'confetti' | 'gift' | null>(null);
+  const [showFireworks, setShowFireworks] = useState(false);
+  const [discoveredHotspots, setDiscoveredHotspots] = useState<Set<number>>(new Set());
+  const [showSecretMessage, setShowSecretMessage] = useState(false);
+  const [showWelcomePopup, setShowWelcomePopup] = useState(false);
   
   // --- Gifts State ---
   const [gifts, setGifts] = useState<Gift[]>([]);
@@ -120,7 +126,50 @@ const App: React.FC = () => {
 
   // --- Layout State ---
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
+  
+  // --- Loading State ---
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  
+  // --- Heart Photo Frame State ---
+  const [currentHeartPhotoIndex, setCurrentHeartPhotoIndex] = useState(0);
 
+  // Loading simulation - Track 3D scene loading
+  useEffect(() => {
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += Math.random() * 15;
+      if (progress >= 100) {
+        progress = 100;
+        setLoadingProgress(100);
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 500);
+        clearInterval(interval);
+      } else {
+        setLoadingProgress(progress);
+      }
+    }, 200);
+    
+    // Also check if images are loaded
+    const images = GALLERY_IMAGES.map(img => {
+      const image = new Image();
+      image.src = img.url;
+      return new Promise((resolve) => {
+        image.onload = resolve;
+        image.onerror = resolve; // Continue even if image fails
+      });
+    });
+    
+    Promise.all(images).then(() => {
+      if (progress < 90) {
+        setLoadingProgress(90);
+      }
+    });
+    
+    return () => clearInterval(interval);
+  }, []);
+  
   // Initialize Audio
   useEffect(() => {
     const audio = audioRef.current;
@@ -273,17 +322,84 @@ const App: React.FC = () => {
     }
   };
 
+  const handleTreeDoubleClick = () => {
+    setShowFireworks(true);
+    setTimeout(() => setShowFireworks(false), 5000); // Fireworks last 5 seconds
+  };
+
+  const handleGiftBoxOpen = () => {
+    playSuccessSound(); // Sound effect
+    // Random gift message when gift box is opened
+    const randomMessage = GIFT_MESSAGES[Math.floor(Math.random() * GIFT_MESSAGES.length)];
+    const randomImage = GALLERY_IMAGES[Math.floor(Math.random() * GALLERY_IMAGES.length)];
+    setSelectedGiftMessage(randomMessage.message);
+    setSelectedGalleryImage(randomImage);
+  };
+
+  const handleHotspotClick = (hotspotId: number) => {
+    playPopSound();
+    setDiscoveredHotspots(prev => new Set([...prev, hotspotId]));
+  };
+
+  const handleHeartPhotoClick = () => {
+    // Đổi sang ảnh tiếp theo trong gallery
+    setCurrentHeartPhotoIndex((prev) => (prev + 1) % GALLERY_IMAGES.length);
+  };
+  
+  // Tự động đổi ảnh sau mỗi 8 giây
+  useEffect(() => {
+    if (!isLoading) {
+      const interval = setInterval(() => {
+        setCurrentHeartPhotoIndex((prev) => (prev + 1) % GALLERY_IMAGES.length);
+      }, 8000); // Đổi ảnh mỗi 8 giây
+      return () => clearInterval(interval);
+    }
+  }, [isLoading]);
+
+  // Show welcome popup on first load
+  useEffect(() => {
+    const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
+    if (!hasSeenWelcome && !isLoading) {
+      setTimeout(() => {
+        setShowWelcomePopup(true);
+      }, 1500);
+    }
+  }, [isLoading]);
+
+  // Check for secret message (all hotspots discovered)
+  useEffect(() => {
+    if (discoveredHotspots.size >= 4 && !showSecretMessage) {
+      setTimeout(() => {
+        setShowSecretMessage(true);
+        playSuccessSound();
+      }, 1000);
+    }
+  }, [discoveredHotspots, showSecretMessage]);
+
   return (
     <div className="w-full h-screen relative bg-black overflow-hidden select-none font-sans cursor-crosshair">
-      <Scene 
-        isDesktop={isDesktop} 
-        memories={[]}
-        onMemoryClick={handleOrnamentClick}
-        windDirection={windDirection}
-        treeShake={treeShake}
-      />
+      {/* Loading Screen */}
+      {isLoading && (
+        <LoadingScreen progress={loadingProgress} message="Đang tải scene 3D..." />
+      )}
       
-      <Overlay 
+      {/* Main Content */}
+      <div className={isLoading ? 'opacity-0 pointer-events-none' : 'opacity-100 transition-opacity duration-500'}>
+        <Scene 
+          isDesktop={isDesktop} 
+          memories={[]}
+          onMemoryClick={handleOrnamentClick}
+          windDirection={windDirection}
+          treeShake={treeShake}
+          showFireworks={showFireworks}
+          onGiftOpen={handleGiftBoxOpen}
+          onTreeDoubleClick={handleTreeDoubleClick}
+        heartPhotoUrl={GALLERY_IMAGES[currentHeartPhotoIndex]?.url}
+        onHeartPhotoClick={handleHeartPhotoClick}
+        currentHeartPhotoIndex={currentHeartPhotoIndex}
+        />
+        
+        <Overlay 
         wishState={wishState} 
         onGenerateWish={handleGenerateWish}
         musicState={musicState}
@@ -319,7 +435,16 @@ const App: React.FC = () => {
         giftMessages={GIFT_MESSAGES.map(g => g.message)}
         secretDiscoveryPopup={false}
         randomAnimationType={randomAnimationType}
+        showSecretMessage={showSecretMessage}
+        onCloseSecretMessage={() => setShowSecretMessage(false)}
+        showWelcomePopup={showWelcomePopup}
+        onCloseWelcomePopup={() => {
+          setShowWelcomePopup(false);
+          localStorage.setItem('hasSeenWelcome', 'true');
+        }}
+        onHotspotClick={handleHotspotClick}
       />
+      </div>
     </div>
   );
 };

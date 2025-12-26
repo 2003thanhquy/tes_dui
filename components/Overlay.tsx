@@ -34,6 +34,11 @@ interface OverlayProps {
   giftMessages: string[];
   secretDiscoveryPopup?: boolean;
   randomAnimationType?: 'orb' | 'confetti' | 'gift' | null;
+  showSecretMessage?: boolean;
+  onCloseSecretMessage?: () => void;
+  showWelcomePopup?: boolean;
+  onCloseWelcomePopup?: () => void;
+  onHotspotClick?: (hotspotId: number) => void;
 }
 
 const TypewriterText: React.FC<{ text: string }> = ({ text }) => {
@@ -80,7 +85,12 @@ const Overlay: React.FC<OverlayProps> = ({
   clickCount,
   giftMessages,
   secretDiscoveryPopup = false,
-  randomAnimationType = null
+  randomAnimationType = null,
+  showSecretMessage = false,
+  onCloseSecretMessage,
+  showWelcomePopup = false,
+  onCloseWelcomePopup,
+  onHotspotClick
 }) => {
   const [newMessage, setNewMessage] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
@@ -88,6 +98,8 @@ const Overlay: React.FC<OverlayProps> = ({
   const [showPanel, setShowPanel] = useState(false);
   const [surpriseImage, setSurpriseImage] = useState<GalleryImage | null>(null);
   const [hotspotClicked, setHotspotClicked] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(0);
   const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Auto-play carousel
@@ -97,6 +109,17 @@ const Overlay: React.FC<OverlayProps> = ({
     }, 5000); // Change image every 5 seconds
     return () => clearInterval(interval);
   }, [galleryImages.length]);
+
+  // Check if tutorial has been shown before
+  useEffect(() => {
+    const hasSeenTutorial = localStorage.getItem('hasSeenTutorial');
+    if (!hasSeenTutorial) {
+      // Show tutorial after 2 seconds
+      setTimeout(() => {
+        setShowTutorial(true);
+      }, 2000);
+    }
+  }, []);
 
   // Auto-close surprise popup sau 10 giây
   useEffect(() => {
@@ -123,6 +146,20 @@ const Overlay: React.FC<OverlayProps> = ({
       }
     };
   }, [surpriseImage]);
+
+  const handleTutorialNext = () => {
+    if (tutorialStep < 2) {
+      setTutorialStep(tutorialStep + 1);
+    } else {
+      setShowTutorial(false);
+      localStorage.setItem('hasSeenTutorial', 'true');
+    }
+  };
+
+  const handleTutorialSkip = () => {
+    setShowTutorial(false);
+    localStorage.setItem('hasSeenTutorial', 'true');
+  };
 
   const goToNext = () => {
     setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length);
@@ -298,12 +335,24 @@ const Overlay: React.FC<OverlayProps> = ({
           </div>
       )}
 
-      {/* Header */}
-      <header className="w-full p-2 md:p-4 text-center z-20 pointer-events-auto">
-        <h1 className="text-2xl sm:text-3xl md:text-5xl font-vibes text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-amber-400 to-red-600 animate-shimmer drop-shadow-[0_2px_10px_rgba(220,38,38,0.4)] hover:scale-105 transition-transform duration-500 ease-out cursor-default px-2">
+      {/* Header - Compact, không che hero */}
+      <header className="absolute top-2 md:top-4 left-1/2 transform -translate-x-1/2 z-20 pointer-events-auto w-full max-w-4xl px-4">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-vibes text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-amber-400 to-red-600 animate-shimmer drop-shadow-[0_2px_10px_rgba(220,38,38,0.4)] cursor-default text-center">
           Merry Christmas My Love ❤️
         </h1>
       </header>
+
+      {/* Gallery Button - Compact, ở góc */}
+      {!showPanel && !surpriseImage && (
+        <button
+          onClick={() => setShowPanel(true)}
+          className="fixed top-16 md:top-20 right-3 md:right-6 z-30 pointer-events-auto bg-gradient-to-r from-red-600/90 to-amber-600/90 hover:from-red-500 hover:to-amber-500 active:from-red-700 active:to-amber-700 text-white font-vibes text-sm md:text-base px-3 md:px-5 py-1.5 md:py-2 rounded-full shadow-[0_0_15px_rgba(220,38,38,0.5)] hover:shadow-[0_0_25px_rgba(220,38,38,0.7)] transition-all duration-300 hover:scale-110 active:scale-95 flex items-center gap-1.5 border border-white/20 touch-manipulation backdrop-blur-sm"
+          aria-label="Mở Gallery và AI Wish Generator"
+        >
+          <span className="text-lg md:text-xl">📷</span>
+          <span className="hidden sm:inline">Gallery</span>
+        </button>
+      )}
 
       {/* Hidden Hotspots - Click anywhere to discover */}
       {!surpriseImage && !showPanel && (
@@ -311,6 +360,7 @@ const Overlay: React.FC<OverlayProps> = ({
           {/* Hotspot 1 - Top Left */}
           <div
             onClick={() => {
+              if (onHotspotClick) onHotspotClick(1);
               const randomImage = galleryImages[Math.floor(Math.random() * galleryImages.length)];
               setSurpriseImage(randomImage);
               setHotspotClicked(true);
@@ -319,6 +369,9 @@ const Overlay: React.FC<OverlayProps> = ({
             style={{
               filter: 'drop-shadow(0 0 20px rgba(220, 38, 38, 0.6))'
             }}
+            aria-label="Khám phá kỷ niệm bất ngờ"
+            role="button"
+            tabIndex={0}
           >
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-2xl md:text-4xl opacity-30 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 animate-pulse transition-opacity group-active:scale-125 md:group-hover:scale-125">💝</div>
@@ -329,6 +382,7 @@ const Overlay: React.FC<OverlayProps> = ({
           {/* Hotspot 2 - Top Right */}
           <div
             onClick={() => {
+              if (onHotspotClick) onHotspotClick(2);
               const randomImage = galleryImages[Math.floor(Math.random() * galleryImages.length)];
               setSurpriseImage(randomImage);
               setHotspotClicked(true);
@@ -337,6 +391,9 @@ const Overlay: React.FC<OverlayProps> = ({
             style={{
               filter: 'drop-shadow(0 0 20px rgba(245, 158, 11, 0.6))'
             }}
+            aria-label="Khám phá kỷ niệm bất ngờ"
+            role="button"
+            tabIndex={0}
           >
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-xl md:text-3xl opacity-30 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 animate-pulse transition-opacity group-active:scale-125 md:group-hover:scale-125">✨</div>
@@ -347,6 +404,7 @@ const Overlay: React.FC<OverlayProps> = ({
           {/* Hotspot 3 - Bottom Left */}
           <div
             onClick={() => {
+              if (onHotspotClick) onHotspotClick(3);
               const randomImage = galleryImages[Math.floor(Math.random() * galleryImages.length)];
               setSurpriseImage(randomImage);
               setHotspotClicked(true);
@@ -355,6 +413,9 @@ const Overlay: React.FC<OverlayProps> = ({
             style={{
               filter: 'drop-shadow(0 0 20px rgba(239, 68, 68, 0.6))'
             }}
+            aria-label="Khám phá kỷ niệm bất ngờ"
+            role="button"
+            tabIndex={0}
           >
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-3xl md:text-5xl opacity-30 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 animate-pulse transition-opacity group-active:scale-125 md:group-hover:scale-125">❤️</div>
@@ -365,6 +426,7 @@ const Overlay: React.FC<OverlayProps> = ({
           {/* Hotspot 4 - Center (subtle hint) - Ẩn trên mobile */}
           <div
             onClick={() => {
+              if (onHotspotClick) onHotspotClick(4);
               const randomImage = galleryImages[Math.floor(Math.random() * galleryImages.length)];
               setSurpriseImage(randomImage);
               setHotspotClicked(true);
@@ -373,6 +435,9 @@ const Overlay: React.FC<OverlayProps> = ({
             style={{
               filter: 'drop-shadow(0 0 20px rgba(251, 191, 36, 0.6))'
             }}
+            aria-label="Khám phá kỷ niệm bất ngờ"
+            role="button"
+            tabIndex={0}
           >
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-6xl opacity-20 group-hover:opacity-60 animate-pulse transition-opacity group-hover:scale-125">🎁</div>
@@ -440,9 +505,14 @@ const Overlay: React.FC<OverlayProps> = ({
               <img
                 src={surpriseImage.url}
                 alt={surpriseImage.title}
-                className="max-w-full max-h-[40vh] md:max-h-[50vh] object-contain rounded-lg md:rounded-xl shadow-2xl animate-[popIn_0.6s_cubic-bezier(0.34,1.56,0.64,1)]"
+                className="max-w-full max-h-[50vh] md:max-h-[60vh] object-contain rounded-lg md:rounded-xl shadow-2xl animate-[popIn_0.6s_cubic-bezier(0.34,1.56,0.64,1)]"
+                style={{
+                  imageRendering: '-webkit-optimize-contrast' as any
+                }}
+                loading="eager"
+                decoding="async"
                 onError={(e) => {
-                  e.currentTarget.src = "https://images.unsplash.com/photo-1512474932049-78ea796b5f4d?q=80&w=800&auto=format&fit=crop";
+                  e.currentTarget.src = "https://images.unsplash.com/photo-1512474932049-78ea796b5f4d?q=80&w=1200&auto=format&fit=crop";
                 }}
               />
             </div>
@@ -455,34 +525,7 @@ const Overlay: React.FC<OverlayProps> = ({
               <div className="font-vibes text-lg md:text-xl text-amber-200 mb-4 leading-relaxed">
                 <TypewriterText text={surpriseImage.message} />
               </div>
-              <div className="w-32 h-1 bg-amber-400/50 mx-auto rounded-full mb-2"></div>
-              
-              {/* Action buttons */}
-              <div className="flex justify-center gap-3 mt-4">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Download image
-                    const link = document.createElement('a');
-                    link.href = surpriseImage.url;
-                    link.download = `kyniem-${surpriseImage.id}.jpg`;
-                    link.click();
-                  }}
-                  className="px-4 py-2 bg-amber-600/80 hover:bg-amber-600 active:bg-amber-700 text-white text-sm rounded-full transition-all duration-300 hover:scale-110 active:scale-95 touch-manipulation flex items-center gap-2"
-                >
-                  📥 Tải về
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSurpriseImage(null);
-                    setHotspotClicked(false);
-                  }}
-                  className="px-4 py-2 bg-red-600/80 hover:bg-red-600 active:bg-red-700 text-white text-sm rounded-full transition-all duration-300 hover:scale-110 active:scale-95 touch-manipulation"
-                >
-                  Đóng
-                </button>
-              </div>
+              <div className="w-32 h-1 bg-amber-400/50 mx-auto rounded-full"></div>
             </div>
           </div>
         </div>
@@ -493,9 +536,13 @@ const Overlay: React.FC<OverlayProps> = ({
         {/* Left Spacer */}
         <div className="hidden md:flex flex-1 items-end p-8">
             <div className="text-white/40 text-sm font-light italic animate-pulse">
-             * Click cây thông để bật đèn, click đúp để xem pháo hoa...
+             * Click cây thông để bật đèn, click đúp để xem pháo hoa rực rỡ! 🎆
              <br/>
              * Di chuột để đổi hướng gió.
+             <br/>
+             * Click vào các biểu tượng ẩn để khám phá kỷ niệm bất ngờ.
+             <br/>
+             * Click vào hộp quà 3D để mở quà đặc biệt! 🎁
             </div>
         </div>
 
@@ -531,21 +578,31 @@ const Overlay: React.FC<OverlayProps> = ({
             </div>
             
             <div className="p-3 md:p-4">
-                {/* AI Wish */}
-                <div className="mb-4 md:mb-6 bg-gradient-to-r from-red-950/40 to-amber-950/40 rounded-lg md:rounded-xl p-3 md:p-4 border border-red-600/20 group hover:border-red-500/50 transition-colors duration-300">
-                     <div className="flex justify-between items-center mb-2 gap-2">
-                        <span className="text-amber-200 font-vibes text-base md:text-xl group-hover:text-amber-100 transition-colors">Gợi ý lời chúc từ AI ✨</span>
+                {/* AI Wish - Cải thiện hiển thị */}
+                <div className="mb-4 md:mb-6 bg-gradient-to-r from-red-950/50 to-amber-950/50 rounded-lg md:rounded-xl p-4 md:p-6 border-2 border-red-600/30 group hover:border-red-500/60 transition-all duration-300 shadow-lg hover:shadow-[0_0_20px_rgba(220,38,38,0.4)]">
+                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-3 gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl md:text-3xl animate-pulse">✨</span>
+                          <span className="text-amber-200 font-vibes text-lg md:text-2xl group-hover:text-amber-100 transition-colors">Gợi ý lời chúc từ AI</span>
+                        </div>
                         <button 
                             onClick={onGenerateWish} 
                             disabled={wishState.loading} 
-                            className="text-[10px] md:text-xs bg-red-600 hover:bg-red-500 active:bg-red-700 text-white px-2 md:px-3 py-1 rounded-full shadow-lg transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-110 active:scale-90 hover:shadow-[0_0_15px_rgba(220,38,38,0.6)] disabled:opacity-50 disabled:scale-100 touch-manipulation whitespace-nowrap"
+                            className="w-full md:w-auto bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 active:from-red-700 active:to-amber-700 text-white font-vibes text-sm md:text-base px-4 md:px-6 py-2 md:py-2.5 rounded-full shadow-lg transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-110 active:scale-95 hover:shadow-[0_0_20px_rgba(220,38,38,0.6)] disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed touch-manipulation border-2 border-white/20"
+                            aria-label={wishState.loading ? 'Đang tạo lời chúc...' : 'Tạo lời chúc mới từ AI'}
                         >
-                            {wishState.loading ? '...' : 'Tạo mới'}
+                            {wishState.loading ? '⏳ Đang tạo...' : '🎁 Tạo lời chúc mới'}
                         </button>
                      </div>
-                     <p className="text-xs md:text-sm text-gray-300 italic min-h-[1.5rem] transition-all duration-300 group-hover:text-white">
-                         {wishState.text || "Bấm tạo để lấy ý tưởng..."}
-                     </p>
+                     <div className="bg-black/30 rounded-lg p-3 md:p-4 min-h-[60px] md:min-h-[80px] flex items-center">
+                       <p className="text-sm md:text-base text-white leading-relaxed transition-all duration-300 group-hover:text-amber-100">
+                         {wishState.text || (
+                           <span className="text-gray-400 italic">
+                             💡 Bấm nút "Tạo lời chúc mới" để AI tạo lời chúc Giáng sinh đặc biệt cho bạn!
+                           </span>
+                         )}
+                       </p>
+                     </div>
                 </div>
 
                 {/* Elegant Photo Carousel */}
@@ -574,8 +631,13 @@ const Overlay: React.FC<OverlayProps> = ({
                                                 src={image.url}
                                                 alt={image.title}
                                                 className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                                                style={{
+                                                  imageRendering: '-webkit-optimize-contrast' as any
+                                                }}
+                                                loading={index === currentImageIndex ? "eager" : "lazy"}
+                                                decoding="async"
                                                 onError={(e) => {
-                                                    e.currentTarget.src = "https://images.unsplash.com/photo-1512474932049-78ea796b5f4d?q=80&w=800&auto=format&fit=crop";
+                                                    e.currentTarget.src = "https://images.unsplash.com/photo-1512474932049-78ea796b5f4d?q=80&w=1200&auto=format&fit=crop";
                                                 }}
                                             />
                                             
@@ -695,13 +757,13 @@ const Overlay: React.FC<OverlayProps> = ({
                 <div className="absolute top-2 right-2 text-xl md:text-2xl animate-pulse">✨</div>
                 <div className="absolute bottom-2 left-2 text-xl md:text-2xl animate-pulse">⭐</div>
                 
-                {/* Close button */}
+                {/* Close button - Larger for mobile */}
                 <button 
                     onClick={(e) => {
                         e.stopPropagation();
                         onCloseGalleryImage();
                     }} 
-                    className="absolute top-2 md:top-4 right-2 md:right-4 text-white/80 hover:text-white text-2xl md:text-3xl w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-full hover:bg-white/20 active:bg-white/30 transition-all duration-300 active:scale-90 z-50 cursor-pointer touch-manipulation"
+                    className="absolute top-2 md:top-4 right-2 md:right-4 text-white/80 hover:text-white text-2xl md:text-3xl w-12 h-12 md:w-14 md:h-14 flex items-center justify-center rounded-full hover:bg-white/20 active:bg-white/30 transition-all duration-300 hover:scale-110 active:scale-90 z-50 cursor-pointer touch-manipulation shadow-lg"
                 >
                     &times;
                 </button>
@@ -711,9 +773,14 @@ const Overlay: React.FC<OverlayProps> = ({
                     <img
                         src={selectedGalleryImage.url}
                         alt={selectedGalleryImage.title}
-                        className="max-w-full max-h-[50vh] md:max-h-[60vh] object-contain rounded-lg shadow-2xl"
+                        className="max-w-full max-h-[60vh] md:max-h-[70vh] object-contain rounded-lg shadow-2xl"
+                        style={{
+                          imageRendering: '-webkit-optimize-contrast' as any
+                        }}
+                        loading="eager"
+                        decoding="async"
                         onError={(e) => {
-                            e.currentTarget.src = "https://images.unsplash.com/photo-1512474932049-78ea796b5f4d?q=80&w=800&auto=format&fit=crop";
+                            e.currentTarget.src = "https://images.unsplash.com/photo-1512474932049-78ea796b5f4d?q=80&w=1200&auto=format&fit=crop";
                         }}
                     />
                 </div>
@@ -732,7 +799,7 @@ const Overlay: React.FC<OverlayProps> = ({
         </div>
     )}
 
-    {/* Gift Message Modal - Click vào món quà - SẮC NÉT & ĐẸP */}
+    {/* Gift Message Modal - Click vào món quà - SẮC NÉT & ĐẸP với Confetti */}
     {selectedGiftMessage && (
         <div 
             className="fixed inset-0 z-[180] flex items-center justify-center bg-black/40 backdrop-blur-md p-4 animate-[fadeIn_0.2s_ease-out] cursor-pointer"
@@ -760,6 +827,40 @@ const Overlay: React.FC<OverlayProps> = ({
                     boxShadow: '0 0 150px rgba(245,158,11,1), 0 0 300px rgba(220,38,38,0.8), inset 0 0 100px rgba(255,255,255,0.1)'
                 }}
             >
+                {/* Confetti effect when modal opens */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                    {[...Array(20)].map((_, i) => (
+                        <div
+                            key={i}
+                            className="absolute text-xl md:text-2xl animate-[confettiFall_2s_ease-out_forwards]"
+                            style={{
+                                left: `${Math.random() * 100}%`,
+                                top: '-10px',
+                                animationDelay: `${Math.random() * 0.5}s`,
+                                transform: `rotate(${Math.random() * 360}deg)`
+                            }}
+                        >
+                            {['🎉', '✨', '💖', '⭐', '🎁'][Math.floor(Math.random() * 5)]}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Floating hearts */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                    {[...Array(8)].map((_, i) => (
+                        <div
+                            key={i}
+                            className="absolute text-xl md:text-2xl animate-[heartFloat_3s_ease-in-out_infinite]"
+                            style={{
+                                left: `${15 + (i * 10)}%`,
+                                top: `${20 + (i % 2) * 60}%`,
+                                animationDelay: `${i * 0.4}s`
+                            }}
+                        >
+                            ❤️
+                        </div>
+                    ))}
+                </div>
                 {/* Animated border glow */}
                 <div className="absolute inset-0 rounded-2xl md:rounded-3xl bg-gradient-to-r from-amber-500 via-red-600 to-red-700 opacity-50 blur-xl animate-pulse"></div>
                 
@@ -826,9 +927,14 @@ const Overlay: React.FC<OverlayProps> = ({
                                 <img
                                     src={selectedGalleryImage.url}
                                     alt={selectedGalleryImage.title}
-                                    className="relative max-w-full max-h-[40vh] object-contain rounded-xl transform transition-transform duration-700 group-hover:scale-110 z-10"
+                                    className="relative max-w-full max-h-[50vh] md:max-h-[60vh] object-contain rounded-xl transform transition-transform duration-700 group-hover:scale-110 z-10"
+                                    style={{
+                                      imageRendering: '-webkit-optimize-contrast' as any
+                                    }}
+                                    loading="eager"
+                                    decoding="async"
                                     onError={(e) => {
-                                        e.currentTarget.src = "https://images.unsplash.com/photo-1512474932049-78ea796b5f4d?q=80&w=800&auto=format&fit=crop";
+                                        e.currentTarget.src = "https://images.unsplash.com/photo-1512474932049-78ea796b5f4d?q=80&w=1200&auto=format&fit=crop";
                                     }}
                                 />
                                 
@@ -927,6 +1033,99 @@ const Overlay: React.FC<OverlayProps> = ({
                 </button>
             </div>
         </div>
+    )}
+
+    {/* Tutorial Modal - Hướng dẫn lần đầu */}
+    {showTutorial && (
+      <div 
+        className="fixed inset-0 z-[250] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-[fadeIn_0.3s_ease-out]"
+      >
+        <div 
+          className="relative bg-gradient-to-br from-red-800/95 via-red-700/95 to-amber-900/95 backdrop-blur-xl p-6 md:p-8 rounded-2xl md:rounded-3xl shadow-[0_0_100px_rgba(185,28,28,0.8)] max-w-lg w-full mx-2 border-2 md:border-4 border-red-500/50 animate-[popIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)]"
+        >
+          {/* Decorative elements */}
+          <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 text-5xl md:text-6xl animate-bounce pointer-events-none">🎄</div>
+          <div className="absolute top-4 right-4 text-2xl md:text-3xl animate-pulse pointer-events-none">✨</div>
+          
+          {/* Close button */}
+          <button 
+            onClick={handleTutorialSkip}
+            className="absolute top-3 md:top-4 right-3 md:right-4 text-white/90 hover:text-white text-2xl md:text-3xl w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-full bg-red-600/80 hover:bg-red-600 border-2 border-white/50 shadow-lg transition-all duration-300 hover:scale-110 active:scale-90 z-50 cursor-pointer touch-manipulation"
+            aria-label="Bỏ qua hướng dẫn"
+          >
+            ×
+          </button>
+          
+          {/* Content */}
+          <div className="text-center pt-8 md:pt-12">
+            <h2 className="font-vibes text-2xl md:text-3xl lg:text-4xl text-white mb-4 md:mb-6 drop-shadow-lg">
+              {tutorialStep === 0 && "🎁 Chào mừng đến với Noel Yêu Thương!"}
+              {tutorialStep === 1 && "📷 Khám phá Gallery & AI"}
+              {tutorialStep === 2 && "✨ Tính năng đặc biệt"}
+            </h2>
+            
+            <div className="text-white/90 text-sm md:text-base leading-relaxed mb-6 md:mb-8 space-y-3">
+              {tutorialStep === 0 && (
+                <>
+                  <p>Đây là một website Giáng sinh 3D đặc biệt với nhiều tính năng tương tác thú vị!</p>
+                  <p className="text-amber-200">Hãy khám phá và tận hưởng những điều bất ngờ... 💖</p>
+                </>
+              )}
+              {tutorialStep === 1 && (
+                <>
+                  <p>📷 <strong>Nút "Gallery & AI"</strong> ở góc trên bên phải:</p>
+                  <p className="text-amber-200">• Xem album kỷ niệm yêu thương</p>
+                  <p className="text-amber-200">• Tạo lời chúc Giáng sinh từ AI</p>
+                  <p className="text-xs md:text-sm text-white/70 mt-3">💡 Click vào nút để mở panel!</p>
+                </>
+              )}
+              {tutorialStep === 2 && (
+                <>
+                  <p>✨ <strong>Các tính năng đặc biệt:</strong></p>
+                  <p className="text-amber-200">• Click cây thông → Bật đèn</p>
+                  <p className="text-amber-200">• Click đúp cây → Pháo hoa rực rỡ! 🎆</p>
+                  <p className="text-amber-200">• Click vào các biểu tượng ẩn → Kỷ niệm bất ngờ</p>
+                  <p className="text-amber-200">• Click vào quả cầu trên cây → Lời yêu thương</p>
+                  <p className="text-amber-200">• Click vào hộp quà 3D → Mở quà đặc biệt</p>
+                  <p className="text-amber-200">• Xem Ông Già Noel và tuần lộc bay quanh scene</p>
+                  <p className="text-amber-200">• Ngắm hiệu ứng Aurora (Northern Lights) trên trời</p>
+                  <p className="text-xs md:text-sm text-white/70 mt-3">🎄 Chúc bạn có một Giáng sinh ấm áp!</p>
+                </>
+              )}
+            </div>
+            
+            {/* Progress dots */}
+            <div className="flex justify-center gap-2 mb-4">
+              {[0, 1, 2].map((step) => (
+                <div
+                  key={step}
+                  className={`h-2 w-2 rounded-full transition-all duration-300 ${
+                    step === tutorialStep ? 'bg-amber-400 w-8' : 'bg-white/30'
+                  }`}
+                />
+              ))}
+            </div>
+            
+            {/* Navigation buttons */}
+            <div className="flex justify-center gap-3">
+              {tutorialStep > 0 && (
+                <button
+                  onClick={() => setTutorialStep(tutorialStep - 1)}
+                  className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white text-sm rounded-full transition-all duration-300 hover:scale-110 active:scale-95 touch-manipulation"
+                >
+                  ← Trước
+                </button>
+              )}
+              <button
+                onClick={handleTutorialNext}
+                className="px-6 py-2 bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-vibes text-sm md:text-base rounded-full shadow-lg transition-all duration-300 hover:scale-110 active:scale-95 touch-manipulation border-2 border-white/20"
+              >
+                {tutorialStep < 2 ? 'Tiếp theo →' : 'Bắt đầu khám phá! 🎉'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     )}
 
     </>
