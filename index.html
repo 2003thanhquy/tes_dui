@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Noel Yêu Thương 3D</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Montserrat:wght@300;400;600&family=Great+Vibes&display=swap" rel="stylesheet">
+    <style>
+      body { margin: 0; overflow: hidden; font-family: 'Montserrat', sans-serif; background-color: #0f172a; }
+      .font-script { font-family: 'Dancing Script', cursive; }
+      .font-vibes { font-family: 'Great Vibes', cursive; }
+      
+      @keyframes floatUp {
+        0% { transform: translateY(0) scale(0.5); opacity: 0; }
+        20% { opacity: 1; transform: translateY(-20px) scale(1.2); }
+        100% { transform: translateY(-100px) scale(1); opacity: 0; }
+      }
+      .animate-float-up {
+        animation: floatUp 1.5s ease-out forwards;
+      }
+
+      @keyframes floatHeart {
+        0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+        50% { opacity: 0.8; }
+        100% { transform: translateY(-60px) translateX(20px) scale(0); opacity: 0; }
+      }
+      .animate-heart-float {
+        animation: floatHeart 3s ease-in-out infinite;
+      }
+
+      @keyframes shimmer {
+        0% { background-position: -200% center; }
+        100% { background-position: 200% center; }
+      }
+      .animate-shimmer {
+        background: linear-gradient(90deg, #f9a8d4 0%, #f472b6 25%, #fff 50%, #f472b6 75%, #f9a8d4 100%);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: shimmer 3s linear infinite;
+      }
+      
+      @keyframes popIn {
+          0% { opacity: 0; transform: scale(0.5) translate(-50%, -50%); }
+          70% { transform: scale(1.1) translate(-45%, -55%); }
+          100% { opacity: 1; transform: scale(1) translate(-50%, -50%); }
+      }
+      
+      /* Standard modal pop */
+      @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+      }
+      
+      @keyframes slideDown {
+          from { 
+              opacity: 0; 
+              transform: translateY(-20px); 
+              max-height: 0;
+          }
+          to { 
+              opacity: 1; 
+              transform: translateY(0); 
+              max-height: 500px;
+          }
+      }
+      
+      .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 10px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(220, 38, 38, 0.5);
+          border-radius: 10px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(220, 38, 38, 0.8);
+      }
+      
+      @keyframes haloPulse {
+          0%, 100% { 
+              opacity: 0.3; 
+              transform: scale(1);
+          }
+          50% { 
+              opacity: 0.6; 
+              transform: scale(1.1);
+          }
+      }
+      
+      .animate-halo-pulse {
+          animation: haloPulse 2s ease-in-out infinite;
+      }
+      
+      .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+      }
+      
+      @keyframes giftFloat {
+          0%, 100% { 
+              transform: translate(-50%, -50%) translateY(0px) rotate(0deg);
+          }
+          25% { 
+              transform: translate(-50%, -50%) translateY(-15px) rotate(5deg);
+          }
+          50% { 
+              transform: translate(-50%, -50%) translateY(-25px) rotate(0deg);
+          }
+          75% { 
+              transform: translate(-50%, -50%) translateY(-15px) rotate(-5deg);
+          }
+      }
+      
+      @keyframes giftModalPop {
+          0% { 
+              opacity: 0; 
+              transform: scale(0.3) rotate(-10deg);
+              filter: blur(20px);
+          }
+          50% { 
+              transform: scale(1.1) rotate(2deg);
+          }
+          100% { 
+              opacity: 1; 
+              transform: scale(1) rotate(0deg);
+              filter: blur(0px);
+          }
+      }
+      
+      @keyframes imageReveal {
+          0% { 
+              opacity: 0; 
+              transform: scale(0.5) rotateY(90deg);
+              filter: blur(10px) brightness(0.5);
+          }
+          50% { 
+              transform: scale(1.1) rotateY(-5deg);
+              filter: blur(2px) brightness(1.2);
+          }
+          100% { 
+              opacity: 1; 
+              transform: scale(1) rotateY(0deg);
+              filter: blur(0px) brightness(1);
+          }
+      }
+      
+      @keyframes heartFloat {
+          0%, 100% { 
+              transform: translateY(0) translateX(0) scale(0.8);
+              opacity: 0.6;
+          }
+          25% { 
+              transform: translateY(-20px) translateX(10px) scale(1);
+              opacity: 1;
+          }
+          50% { 
+              transform: translateY(-40px) translateX(-5px) scale(1.1);
+              opacity: 0.8;
+          }
+          75% { 
+              transform: translateY(-20px) translateX(5px) scale(1);
+              opacity: 0.9;
+          }
+      }
+      
+      @keyframes treeShake {
+          0%, 100% { transform: translateX(0) rotateZ(0deg); }
+          25% { transform: translateX(-3px) rotateZ(-1deg); }
+          75% { transform: translateX(3px) rotateZ(1deg); }
+      }
+      
+      @keyframes confettiFall {
+          0% { 
+              transform: translateY(0) rotate(0deg);
+              opacity: 1;
+          }
+          100% { 
+              transform: translateY(100vh) rotate(720deg);
+              opacity: 0;
+          }
+      }
+      
+      @keyframes giftDrop {
+          0% { 
+              transform: translateY(-50px) scale(0.5);
+              opacity: 0;
+          }
+          50% { 
+              transform: translateY(50px) scale(1.2);
+              opacity: 1;
+          }
+          100% { 
+              transform: translateY(150px) scale(0.8);
+              opacity: 0;
+          }
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "@react-three/fiber": "https://esm.sh/@react-three/fiber@^9.4.2",
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@react-three/drei": "https://esm.sh/@react-three/drei@^10.7.7",
+    "three": "https://esm.sh/three@^0.182.0",
+    "@react-three/postprocessing": "https://esm.sh/@react-three/postprocessing@^3.0.4"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
