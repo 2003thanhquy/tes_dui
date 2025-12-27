@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Scene from './components/Scene';
 import Overlay from './components/Overlay';
 import LoadingScreen from './components/LoadingScreen';
+import GestureController, { GestureType } from './components/GestureController';
 import { generateRomanticWish } from './services/geminiService';
 import { WishState, MusicState, ClickEffect, LoveMessage, CountdownTime, OrnamentClickEffect, Gift } from './types';
 import { playPopSound, playSuccessSound } from './utils/soundEffects';
+import { loadGalleryImages, preloadImages, getRecommendedImageCount, GalleryImage } from './utils/imageLoader';
 
 // --- SPECIAL GIFT MESSAGES --- (Dài hơn, cảm động hơn)
 const GIFT_MESSAGES = [
@@ -19,38 +21,12 @@ const GIFT_MESSAGES = [
 ];
 
 // --- GALLERY IMAGES ---
-const GALLERY_IMAGES = [
-  { 
-    id: 1, 
-    url: "/1.jpg", 
-    title: "Kỷ niệm đẹp",
-    message: "Mùa đông này ấm áp vì có em bên cạnh ❤️"
-  },
-  { 
-    id: 2, 
-    url: "/2.jpg", 
-    title: "Khoảnh khắc yêu thương",
-    message: "Nụ cười của em toả sáng hơn cả đèn cây thông ✨"
-  },
-  { 
-    id: 3, 
-    url: "/3.jpg", 
-    title: "Giáng sinh an lành",
-    message: "Giáng sinh an lành, tình yêu của anh 🎄"
-  },
-  { 
-    id: 4, 
-    url: "/4.jpg", 
-    title: "Lời hứa mãi mãi",
-    message: "Cùng nhau già đi, cùng nhau đón Noel nhé 🎁"
-  },
-  { 
-    id: 5, 
-    url: "/5.jpg", 
-    title: "Món quà tuyệt nhất",
-    message: "Món quà tuyệt nhất năm nay chính là Em 💝"
-  },
-];
+// Load images professionally with lazy loading and performance optimization
+const MAX_IMAGES_TO_DISPLAY = getRecommendedImageCount(); // 0 = all, 5 = mobile, etc.
+const USE_RANDOM_SELECTION = false; // Set to true to randomize images
+
+// Initialize gallery images
+let GALLERY_IMAGES: GalleryImage[] = loadGalleryImages(MAX_IMAGES_TO_DISPLAY, USE_RANDOM_SELECTION);
 
 // --- LOVE MESSAGES FOR ORNAMENTS ---
 const ORNAMENT_LOVE_MESSAGES = [
@@ -95,7 +71,7 @@ const App: React.FC = () => {
   const [ornamentLoveMessage, setOrnamentLoveMessage] = useState<string | null>(null);
   
   // --- Gallery State ---
-  const [selectedGalleryImage, setSelectedGalleryImage] = useState<typeof GALLERY_IMAGES[0] | null>(null);
+  const [selectedGalleryImage, setSelectedGalleryImage] = useState<GalleryImage | null>(null);
 
   // --- Audio State ---
   const [musicState, setMusicState] = useState<MusicState>({
@@ -131,14 +107,35 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
   
+  // --- Gallery Images State ---
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>(GALLERY_IMAGES);
+  
   // --- Heart Photo Frame State ---
   const [currentHeartPhotoIndex, setCurrentHeartPhotoIndex] = useState(0);
+  
+  // --- Carousel Zoom State ---
+  const [carouselRadius, setCarouselRadius] = useState(4.5); // Default radius
+
+  // Preload images for better performance
+  useEffect(() => {
+    if (galleryImages.length === 0) return;
+    
+    console.log(`📸 Loading ${galleryImages.length} images...`);
+    preloadImages(galleryImages, (loaded, total) => {
+      const progress = Math.min(90, (loaded / total) * 85); // Reserve 15% for 3D scene
+      setLoadingProgress(progress);
+      console.log(`📸 Images loaded: ${loaded}/${total} (${Math.round(progress)}%)`);
+    }).then(() => {
+      console.log('✅ All images preloaded');
+      setLoadingProgress(90); // Set to 90% when all images loaded
+    });
+  }, [galleryImages]);
 
   // Loading simulation - Track 3D scene loading
   useEffect(() => {
-    let progress = 0;
+    let progress = loadingProgress;
     const interval = setInterval(() => {
-      progress += Math.random() * 15;
+      progress += Math.random() * 3;
       if (progress >= 100) {
         progress = 100;
         setLoadingProgress(100);
@@ -151,24 +148,8 @@ const App: React.FC = () => {
       }
     }, 200);
     
-    // Also check if images are loaded
-    const images = GALLERY_IMAGES.map(img => {
-      const image = new Image();
-      image.src = img.url;
-      return new Promise((resolve) => {
-        image.onload = resolve;
-        image.onerror = resolve; // Continue even if image fails
-      });
-    });
-    
-    Promise.all(images).then(() => {
-      if (progress < 90) {
-        setLoadingProgress(90);
-      }
-    });
-    
     return () => clearInterval(interval);
-  }, []);
+  }, [loadingProgress]);
   
   // Initialize Audio
   useEffect(() => {
@@ -331,7 +312,7 @@ const App: React.FC = () => {
     playSuccessSound(); // Sound effect
     // Random gift message when gift box is opened
     const randomMessage = GIFT_MESSAGES[Math.floor(Math.random() * GIFT_MESSAGES.length)];
-    const randomImage = GALLERY_IMAGES[Math.floor(Math.random() * GALLERY_IMAGES.length)];
+    const randomImage = galleryImages[Math.floor(Math.random() * galleryImages.length)];
     setSelectedGiftMessage(randomMessage.message);
     setSelectedGalleryImage(randomImage);
   };
@@ -343,18 +324,102 @@ const App: React.FC = () => {
 
   const handleHeartPhotoClick = () => {
     // Đổi sang ảnh tiếp theo trong gallery
-    setCurrentHeartPhotoIndex((prev) => (prev + 1) % GALLERY_IMAGES.length);
+    setCurrentHeartPhotoIndex((prev) => (prev + 1) % galleryImages.length);
+  };
+
+  const handleCarouselPhotoClick = (image: GalleryImage) => {
+    playPopSound(); // Sound effect khi click ảnh
+    setSelectedGalleryImage(image); // Hiển thị popup với thông tin ảnh
+  };
+
+  // Smooth zoom with lerp interpolation
+  const targetRadiusRef = useRef(4.5);
+  const currentRadiusRef = useRef(4.5);
+  const zoomAnimationRef = useRef<number | null>(null);
+
+  // Zoom handler for continuous zoom control with smooth interpolation
+  const handleZoom = useCallback((zoomDelta: number) => {
+    // Update target radius
+    targetRadiusRef.current = Math.max(2.5, Math.min(7, targetRadiusRef.current + zoomDelta));
+    
+    // Cancel previous animation if exists
+    if (zoomAnimationRef.current) {
+      cancelAnimationFrame(zoomAnimationRef.current);
+    }
+    
+    // Smooth lerp animation
+    const animate = () => {
+      const current = currentRadiusRef.current;
+      const target = targetRadiusRef.current;
+      const diff = target - current;
+      
+      // Lerp với tốc độ cao (0.15) để mượt và responsive
+      if (Math.abs(diff) > 0.01) {
+        currentRadiusRef.current = current + diff * 0.15;
+        setCarouselRadius(currentRadiusRef.current);
+        zoomAnimationRef.current = requestAnimationFrame(animate);
+      } else {
+        currentRadiusRef.current = target;
+        setCarouselRadius(target);
+        zoomAnimationRef.current = null;
+      }
+    };
+    
+    animate();
+  }, []);
+
+  // Gesture handlers
+  const handleGesture = (gesture: GestureType) => {
+    console.log('Gesture detected:', gesture);
+    playPopSound();
+
+    switch (gesture) {
+      case 'wave':
+        // Vẫy tay → Mở gallery panel
+        const randomImage = galleryImages[Math.floor(Math.random() * galleryImages.length)];
+        setSelectedGalleryImage(randomImage);
+        break;
+      
+      case 'point':
+        // Chỉ tay → Tương tác với ảnh carousel (next image)
+        setCurrentHeartPhotoIndex((prev) => (prev + 1) % galleryImages.length);
+        break;
+      
+      case 'fist':
+        // Nắm tay → Đóng popup
+        setSelectedGalleryImage(null);
+        setSelectedGiftMessage(null);
+        break;
+      
+      case 'ok':
+        // OK sign → Trigger fireworks
+        handleTreeDoubleClick();
+        break;
+      
+      case 'thumbs_up':
+        // Thumbs up → Mở gift box
+        handleGiftBoxOpen();
+        break;
+      
+      case 'peace':
+        // Peace sign → Toggle music
+        toggleMusic();
+        break;
+      
+      default:
+        break;
+    }
   };
   
   // Tự động đổi ảnh sau mỗi 8 giây
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && galleryImages.length > 0) {
       const interval = setInterval(() => {
-        setCurrentHeartPhotoIndex((prev) => (prev + 1) % GALLERY_IMAGES.length);
+        setCurrentHeartPhotoIndex((prev) => (prev + 1) % galleryImages.length);
       }, 8000); // Đổi ảnh mỗi 8 giây
       return () => clearInterval(interval);
     }
-  }, [isLoading]);
+  }, [isLoading, galleryImages.length]);
 
   // Show welcome popup on first load
   useEffect(() => {
@@ -394,9 +459,12 @@ const App: React.FC = () => {
           showFireworks={showFireworks}
           onGiftOpen={handleGiftBoxOpen}
           onTreeDoubleClick={handleTreeDoubleClick}
-        heartPhotoUrl={GALLERY_IMAGES[currentHeartPhotoIndex]?.url}
-        onHeartPhotoClick={handleHeartPhotoClick}
-        currentHeartPhotoIndex={currentHeartPhotoIndex}
+          heartPhotoUrl={galleryImages[currentHeartPhotoIndex]?.url}
+          onHeartPhotoClick={handleHeartPhotoClick}
+          currentHeartPhotoIndex={currentHeartPhotoIndex}
+          carouselImages={galleryImages}
+          onCarouselPhotoClick={handleCarouselPhotoClick}
+          carouselRadius={carouselRadius}
         />
         
         <Overlay 
@@ -412,7 +480,7 @@ const App: React.FC = () => {
         ornamentEffects={ornamentEffects}
         ornamentLoveMessage={ornamentLoveMessage}
         onCloseOrnamentMessage={() => setOrnamentLoveMessage(null)}
-        galleryImages={GALLERY_IMAGES}
+        galleryImages={galleryImages}
         selectedGalleryImage={selectedGalleryImage}
         onSelectGalleryImage={setSelectedGalleryImage}
         onCloseGalleryImage={() => setSelectedGalleryImage(null)}
@@ -420,7 +488,7 @@ const App: React.FC = () => {
         onGiftClick={(gift) => {
           // Random message và image khi click vào gift
           const randomMessage = GIFT_MESSAGES[Math.floor(Math.random() * GIFT_MESSAGES.length)];
-          const randomImage = GALLERY_IMAGES[Math.floor(Math.random() * GALLERY_IMAGES.length)];
+          const randomImage = galleryImages[Math.floor(Math.random() * galleryImages.length)];
           setSelectedGiftMessage(randomMessage.message);
           setSelectedGalleryImage(randomImage);
           setGifts(prev => prev.filter(g => g.id !== gift.id));
@@ -443,6 +511,13 @@ const App: React.FC = () => {
           localStorage.setItem('hasSeenWelcome', 'true');
         }}
         onHotspotClick={handleHotspotClick}
+      />
+      
+      {/* Gesture Controller - Camera-based gesture recognition */}
+      <GestureController 
+        onGesture={handleGesture}
+        onZoom={handleZoom}
+        enabled={isDesktop} // Chỉ bật trên desktop để tránh lag trên mobile
       />
       </div>
     </div>

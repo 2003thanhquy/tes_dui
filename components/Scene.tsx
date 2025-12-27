@@ -12,6 +12,7 @@ import Reindeer from './Reindeer';
 import SnowGlobe from './SnowGlobe';
 import HeartPhotoFrame from './HeartPhotoFrame';
 import CameraController from './CameraController';
+import PhotoCarousel from './PhotoCarousel';
 import { Memory } from '../types';
 import { getPerformanceConfig } from '../utils/performance';
 
@@ -128,6 +129,9 @@ interface SceneProps {
   heartPhotoUrl?: string;
   onHeartPhotoClick?: () => void;
   currentHeartPhotoIndex?: number;
+  carouselImages?: Array<{ id: number; url: string; title: string; message: string }>;
+  onCarouselPhotoClick?: (image: { id: number; url: string; title: string; message: string }) => void;
+  carouselRadius?: number;
 }
 
 const Scene: React.FC<SceneProps> = ({ 
@@ -141,7 +145,10 @@ const Scene: React.FC<SceneProps> = ({
   onTreeDoubleClick,
   heartPhotoUrl,
   onHeartPhotoClick,
-  currentHeartPhotoIndex = 0
+  currentHeartPhotoIndex = 0,
+  carouselImages = [],
+  onCarouselPhotoClick,
+  carouselRadius
 }) => {
   const treePosition: [number, number, number] = isDesktop ? [-2, -1.5, 0] : [0, -2, 0];
   const [repelPoint, setRepelPoint] = useState<THREE.Vector3 | null>(null);
@@ -176,7 +183,13 @@ const Scene: React.FC<SceneProps> = ({
 
   return (
     <div className="w-full h-full absolute inset-0 z-0 bg-gradient-to-b from-[#0a0a1a] via-[#1a0a2e] to-[#2d1b4e]">
-      <Canvas shadows camera={{ position: [0, 0, 12], fov: isDesktop ? 50 : 55 }}>
+      <Canvas 
+        shadows={perfConfig.enableShadows} 
+        camera={{ position: [0, 0, 12], fov: isDesktop ? 50 : 55 }}
+        dpr={perfConfig.pixelRatio}
+        frameloop="always"
+        performance={{ min: 0.5 }}
+      >
         <color attach="background" args={['#0a0a1a']} />
         <fog attach="fog" args={['#0a0a1a', 8, 25]} />
         
@@ -208,6 +221,17 @@ const Scene: React.FC<SceneProps> = ({
                   />
                 )}
                 
+                {/* Photo Carousel - Rotating around tree */}
+                {carouselImages.length > 0 && onCarouselPhotoClick && (
+                  <PhotoCarousel 
+                    images={perfConfig.carouselImages > 0 ? carouselImages.slice(0, perfConfig.carouselImages) : carouselImages}
+                    onPhotoClick={onCarouselPhotoClick}
+                    radius={carouselRadius ?? (isDesktop ? 5 : 3.5)}
+                    height={isDesktop ? 2 : 1.2}
+                    speed={isDesktop ? 0.25 : 0.15}
+                  />
+                )}
+
                 {/* Christmas Tree - Centered */}
                 <group position={treePosition} className={treeShake ? 'animate-[treeShake_0.2s_ease-in-out]' : ''}>
                     <ChristmasTree memories={memories} onOrnamentClick={onMemoryClick} onDoubleClick={onTreeDoubleClick} />
@@ -247,9 +271,17 @@ const Scene: React.FC<SceneProps> = ({
 
             {/* Snow - Adaptive count based on device */}
             <Snow count={perfConfig.snow} wind={windDirection} repelPoint={repelPoint} />
-            <Stars radius={100} depth={50} count={perfConfig.stars} factor={8} saturation={1.5} fade speed={2} />
+            <Stars 
+              radius={100} 
+              depth={50} 
+              count={perfConfig.stars} 
+              factor={isDesktop ? 8 : 6} 
+              saturation={isDesktop ? 1.5 : 1.2} 
+              fade 
+              speed={isDesktop ? 2 : 1.5} 
+            />
             <Environment preset="sunset" />
-            {perfConfig.enableShadows && (
+            {perfConfig.enableContactShadows && (
               <ContactShadows position={[0, -4, 0]} opacity={0.8} scale={20} blur={3} far={4} color="#000" />
             )}
         </Suspense>

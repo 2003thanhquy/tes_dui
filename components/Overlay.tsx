@@ -752,10 +752,46 @@ const Overlay: React.FC<OverlayProps> = ({
                 className="relative bg-gradient-to-br from-red-950/90 via-red-900/90 to-amber-950/90 backdrop-blur-lg p-4 md:p-6 rounded-xl md:rounded-2xl shadow-[0_0_80px_rgba(185,28,28,0.6)] max-w-4xl w-full mx-2 max-h-[90vh] overflow-y-auto border-2 border-red-600/30 animate-[popIn_0.4s_cubic-bezier(0.34,1.56,0.64,1)] flex flex-col"
                 onClick={(e) => e.stopPropagation()}
             >
+                {/* Confetti effect when modal opens */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl md:rounded-2xl">
+                    {[...Array(15)].map((_, i) => (
+                        <div
+                            key={i}
+                            className="absolute text-lg md:text-xl animate-[confettiFall_2s_ease-out_forwards]"
+                            style={{
+                                left: `${Math.random() * 100}%`,
+                                top: '-10px',
+                                animationDelay: `${Math.random() * 0.5}s`,
+                                transform: `rotate(${Math.random() * 360}deg)`
+                            }}
+                        >
+                            {['🎉', '✨', '💖', '⭐', '🎁', '💝'][Math.floor(Math.random() * 6)]}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Floating hearts */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl md:rounded-2xl">
+                    {[...Array(8)].map((_, i) => (
+                        <div
+                            key={i}
+                            className="absolute text-xl md:text-2xl animate-[heartFloat_3s_ease-in-out_infinite]"
+                            style={{
+                                left: `${20 + Math.random() * 60}%`,
+                                bottom: '-20px',
+                                animationDelay: `${i * 0.4}s`,
+                                opacity: 0.7
+                            }}
+                        >
+                            ❤️
+                        </div>
+                    ))}
+                </div>
+
                 {/* Decorative elements */}
-                <div className="absolute -top-2 md:-top-3 left-1/2 transform -translate-x-1/2 text-3xl md:text-4xl animate-bounce">💖</div>
-                <div className="absolute top-2 right-2 text-xl md:text-2xl animate-pulse">✨</div>
-                <div className="absolute bottom-2 left-2 text-xl md:text-2xl animate-pulse">⭐</div>
+                <div className="absolute -top-2 md:-top-3 left-1/2 transform -translate-x-1/2 text-3xl md:text-4xl animate-bounce z-10">💖</div>
+                <div className="absolute top-2 right-2 text-xl md:text-2xl animate-pulse z-10">✨</div>
+                <div className="absolute bottom-2 left-2 text-xl md:text-2xl animate-pulse z-10">⭐</div>
                 
                 {/* Close button - Larger for mobile */}
                 <button 
