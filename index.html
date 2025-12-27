@@ -11,6 +11,11 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- Preload critical fonts for faster rendering -->
+    <link rel="preload" href="https://fonts.gstatic.com/s/montserrat/v26/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Hw5aXpsog.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="https://fonts.gstatic.com/s/dancingscript/v25/If2cXTr6YS-zF4S2cXoFQlZ2Q-3A.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="https://fonts.gstatic.com/s/greatvibes/v15/RWmMoKWR9v4ksMfaWd_JN9XLiaQ6DQ.woff2" as="font" type="font/woff2" crossorigin>
+    
     <!-- Load Google Fonts with Vietnamese character support -->
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Montserrat:wght@300;400;600&family=Great+Vibes&display=swap&subset=vietnamese,latin" rel="stylesheet">
     
@@ -28,20 +33,39 @@
         text-rendering: optimizeLegibility;
         font-feature-settings: "kern" 1;
         font-kerning: normal;
+        /* Force font rendering - wait for fonts to load */
+        font-display: swap;
+        /* Vietnamese character support */
+        font-variant-east-asian: normal;
+      }
+      
+      /* Wait for fonts to load before showing text */
+      .font-loading {
+        visibility: hidden;
+      }
+      
+      .font-loaded {
+        visibility: visible;
       }
       
       .font-script { 
-        font-family: 'Dancing Script', 'Brush Script MT', 'Lucida Handwriting', 'Comic Sans MS', cursive;
+        font-family: 'Dancing Script', 'Brush Script MT', 'Lucida Handwriting', 'Comic Sans MS', cursive, sans-serif;
         font-display: swap;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        /* Ensure Vietnamese characters render correctly */
+        font-variant-east-asian: normal;
       }
       
       .font-vibes { 
-        font-family: 'Great Vibes', 'Brush Script MT', 'Lucida Handwriting', 'Comic Sans MS', cursive;
+        font-family: 'Great Vibes', 'Brush Script MT', 'Lucida Handwriting', 'Comic Sans MS', cursive, sans-serif;
         font-display: swap;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        /* Ensure Vietnamese characters render correctly */
+        font-variant-east-asian: normal;
       }
       
       /* Force font rendering consistency across all elements */
@@ -49,6 +73,14 @@
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         text-rendering: optimizeLegibility;
+        /* Prevent font substitution issues */
+        font-variant-ligatures: normal;
+        font-variant-numeric: normal;
+      }
+      
+      /* Ensure text is visible even if fonts fail to load */
+      body, .font-script, .font-vibes {
+        font-synthesis: weight style;
       }
       
       /* Ensure Vietnamese characters render correctly */

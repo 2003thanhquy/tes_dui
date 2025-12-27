@@ -132,6 +132,9 @@ interface SceneProps {
   carouselImages?: Array<{ id: number; url: string; title: string; message: string }>;
   onCarouselPhotoClick?: (image: { id: number; url: string; title: string; message: string }) => void;
   carouselRadius?: number;
+  carouselPosition?: [number, number, number] | null;
+  cameraRotation?: [number, number]; // [yaw, pitch] - xoay camera bằng gesture
+  carouselRotation?: number; // Góc xoay của carousel (điều khiển bằng gesture)
 }
 
 const Scene: React.FC<SceneProps> = ({ 
@@ -148,7 +151,10 @@ const Scene: React.FC<SceneProps> = ({
   currentHeartPhotoIndex = 0,
   carouselImages = [],
   onCarouselPhotoClick,
-  carouselRadius
+  carouselRadius,
+  carouselPosition,
+  cameraRotation = [0, 0],
+  carouselRotation = 0
 }) => {
   const treePosition: [number, number, number] = isDesktop ? [-2, -1.5, 0] : [0, -2, 0];
   const [repelPoint, setRepelPoint] = useState<THREE.Vector3 | null>(null);
@@ -188,7 +194,7 @@ const Scene: React.FC<SceneProps> = ({
         camera={{ position: [0, 0, 12], fov: isDesktop ? 50 : 55 }}
         dpr={perfConfig.pixelRatio}
         frameloop="always"
-        performance={{ min: 0.5 }}
+        performance={{ min: 0.75 }} // Tăng từ 0.5 lên 0.75 để mượt hơn (target 45fps thay vì 30fps)
       >
         <color attach="background" args={['#0a0a1a']} />
         <fog attach="fog" args={['#0a0a1a', 8, 25]} />
@@ -221,14 +227,18 @@ const Scene: React.FC<SceneProps> = ({
                   />
                 )}
                 
-                {/* Photo Carousel - Rotating around tree */}
+                {/* Photo Carousel - Trước cây thông, có thể điều khiển bằng gesture */}
                 {carouselImages.length > 0 && onCarouselPhotoClick && (
                   <PhotoCarousel 
                     images={perfConfig.carouselImages > 0 ? carouselImages.slice(0, perfConfig.carouselImages) : carouselImages}
                     onPhotoClick={onCarouselPhotoClick}
                     radius={carouselRadius ?? (isDesktop ? 5 : 3.5)}
                     height={isDesktop ? 2 : 1.2}
-                    speed={isDesktop ? 0.25 : 0.15}
+                    speed={0.3} // Tốc độ xoay tự động
+                    enableRotation={true} // Bật xoay quanh cây thông
+                    rotationAngle={carouselRotation} // Góc xoay từ gesture
+                    position={carouselPosition || (isDesktop ? [0, 2, -3] : [0, 1.5, -2.5])} // Trước cây thông
+                    enableFloating={true} // Bật floating animation
                   />
                 )}
 
@@ -293,10 +303,11 @@ const Scene: React.FC<SceneProps> = ({
             maxDistance={15}
             minPolarAngle={Math.PI / 3} 
             maxPolarAngle={Math.PI / 1.8}
-            autoRotate={true}
+            autoRotate={cameraRotation[0] === 0 && cameraRotation[1] === 0} // Tắt auto rotate khi có gesture rotation
             autoRotateSpeed={0.3}
             enableDamping={true}
             dampingFactor={0.05}
+            target={[cameraRotation[0] * 2, cameraRotation[1] * 2, 0]} // Xoay camera dựa trên gesture
         />
 
         {perfConfig.enableBloom && (

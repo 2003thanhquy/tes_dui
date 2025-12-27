@@ -8,10 +8,10 @@ export interface GalleryImage {
   loaded?: boolean;
 }
 
-// Default messages for images
+// Default messages for images - Đã kiểm tra chính tả kỹ
 const DEFAULT_MESSAGES = [
   "Mùa đông này ấm áp vì có em bên cạnh ❤️",
-  "Nụ cười của em toả sáng hơn cả đèn cây thông ✨",
+  "Nụ cười của em tỏa sáng hơn cả đèn cây thông ✨",
   "Giáng sinh an lành, tình yêu của anh 🎄",
   "Cùng nhau già đi, cùng nhau đón Noel nhé 🎁",
   "Món quà tuyệt nhất năm nay chính là Em 💝",

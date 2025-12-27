@@ -115,6 +115,15 @@ const App: React.FC = () => {
   
   // --- Carousel Zoom State ---
   const [carouselRadius, setCarouselRadius] = useState(4.5); // Default radius
+  
+  // --- Carousel Position State (điều khiển bằng gesture) ---
+  const [carouselPosition, setCarouselPosition] = useState<[number, number, number] | null>(null); // null = auto layout
+  
+  // --- Camera Rotation State (điều khiển bằng gesture) ---
+  const [cameraRotation, setCameraRotation] = useState<[number, number]>([0, 0]); // [yaw, pitch]
+  
+  // --- Carousel Rotation State (điều khiển bằng gesture) ---
+  const [carouselRotation, setCarouselRotation] = useState<number>(0); // Góc xoay carousel (radians)
 
   // Preload images for better performance
   useEffect(() => {
@@ -347,15 +356,15 @@ const App: React.FC = () => {
       cancelAnimationFrame(zoomAnimationRef.current);
     }
     
-    // Smooth lerp animation
+    // Smooth lerp animation - Tăng tốc độ để mượt hơn
     const animate = () => {
       const current = currentRadiusRef.current;
       const target = targetRadiusRef.current;
       const diff = target - current;
       
-      // Lerp với tốc độ cao (0.15) để mượt và responsive
-      if (Math.abs(diff) > 0.01) {
-        currentRadiusRef.current = current + diff * 0.15;
+      // Lerp với tốc độ cao hơn (0.25) để cực kỳ mượt và responsive
+      if (Math.abs(diff) > 0.005) {
+        currentRadiusRef.current = current + diff * 0.25;
         setCarouselRadius(currentRadiusRef.current);
         zoomAnimationRef.current = requestAnimationFrame(animate);
       } else {
@@ -366,6 +375,34 @@ const App: React.FC = () => {
     };
     
     animate();
+  }, []);
+
+  // Position handler for gesture control (di chuyển ảnh)
+  const handlePositionChange = useCallback((deltaX: number, deltaY: number, deltaZ: number) => {
+    setCarouselPosition((prev) => {
+      const current = prev || [0, 2, -3]; // Default: trước cây thông
+      return [
+        Math.max(-5, Math.min(5, current[0] + deltaX)),
+        Math.max(0, Math.min(4, current[1] + deltaY)),
+        Math.max(-6, Math.min(-1, current[2] + deltaZ))
+      ] as [number, number, number];
+    });
+  }, []);
+
+  // Rotation handler for gesture control (xoay camera/scene và carousel)
+  const handleRotationChange = useCallback((deltaYaw: number, deltaPitch: number) => {
+    // Xoay camera
+    setCameraRotation((prev) => {
+      return [
+        prev[0] + deltaYaw, // Yaw (xoay ngang)
+        Math.max(-Math.PI / 4, Math.min(Math.PI / 4, prev[1] + deltaPitch)) // Pitch (xoay dọc, giới hạn)
+      ] as [number, number];
+    });
+    
+    // Xoay carousel quanh cây thông
+    setCarouselRotation((prev) => {
+      return (prev + deltaYaw) % (Math.PI * 2);
+    });
   }, []);
 
   // Gesture handlers
@@ -465,6 +502,8 @@ const App: React.FC = () => {
           carouselImages={galleryImages}
           onCarouselPhotoClick={handleCarouselPhotoClick}
           carouselRadius={carouselRadius}
+          carouselPosition={carouselPosition}
+          carouselRotation={carouselRotation}
         />
         
         <Overlay 
@@ -517,6 +556,8 @@ const App: React.FC = () => {
       <GestureController 
         onGesture={handleGesture}
         onZoom={handleZoom}
+        onPositionChange={handlePositionChange}
+        onRotationChange={handleRotationChange}
         enabled={isDesktop} // Chỉ bật trên desktop để tránh lag trên mobile
       />
       </div>

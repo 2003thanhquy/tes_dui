@@ -101,6 +101,8 @@ const Overlay: React.FC<OverlayProps> = ({
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
   const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const galleryAutoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const galleryLastInteractionRef = useRef<number>(Date.now());
 
   // Auto-play carousel
   useEffect(() => {
@@ -147,8 +149,64 @@ const Overlay: React.FC<OverlayProps> = ({
     };
   }, [surpriseImage]);
 
+  // Auto-close gallery lightbox sau 10 giây nếu người dùng không tương tác
+  useEffect(() => {
+    if (selectedGalleryImage && !selectedGiftMessage) {
+      // Reset last interaction time khi mở modal
+      galleryLastInteractionRef.current = Date.now();
+      
+      const scheduleAutoClose = () => {
+        // Clear timer cũ nếu có
+        if (galleryAutoCloseTimerRef.current) {
+          clearTimeout(galleryAutoCloseTimerRef.current);
+        }
+        
+        // Tính thời gian còn lại (tối thiểu 10 giây từ lần tương tác cuối)
+        const timeSinceLastInteraction = Date.now() - galleryLastInteractionRef.current;
+        const remainingTime = Math.max(0, 10000 - timeSinceLastInteraction);
+        
+        // Set timer mới
+        galleryAutoCloseTimerRef.current = setTimeout(() => {
+          // Kiểm tra lại xem có tương tác trong 10 giây qua không
+          const timeSinceLastInteraction = Date.now() - galleryLastInteractionRef.current;
+          if (timeSinceLastInteraction >= 10000) {
+            onCloseGalleryImage();
+          } else {
+            // Nếu có tương tác, schedule lại
+            scheduleAutoClose();
+          }
+        }, remainingTime);
+      };
+      
+      scheduleAutoClose();
+      
+      // Check mỗi giây để đảm bảo chính xác
+      const checkInterval = setInterval(() => {
+        const timeSinceLastInteraction = Date.now() - galleryLastInteractionRef.current;
+        if (timeSinceLastInteraction >= 10000 && selectedGalleryImage) {
+          onCloseGalleryImage();
+          clearInterval(checkInterval);
+        }
+      }, 1000);
+      
+      return () => {
+        if (galleryAutoCloseTimerRef.current) {
+          clearTimeout(galleryAutoCloseTimerRef.current);
+          galleryAutoCloseTimerRef.current = null;
+        }
+        clearInterval(checkInterval);
+      };
+    } else {
+      // Clear timer khi modal đóng
+      if (galleryAutoCloseTimerRef.current) {
+        clearTimeout(galleryAutoCloseTimerRef.current);
+        galleryAutoCloseTimerRef.current = null;
+      }
+    }
+  }, [selectedGalleryImage, selectedGiftMessage, onCloseGalleryImage]);
+
   const handleTutorialNext = () => {
-    if (tutorialStep < 2) {
+    if (tutorialStep < 3) {
       setTutorialStep(tutorialStep + 1);
     } else {
       setShowTutorial(false);
@@ -646,10 +704,19 @@ const Overlay: React.FC<OverlayProps> = ({
                                             
                                             {/* Content overlay */}
                                             <div className="absolute bottom-0 left-0 right-0 p-3 md:p-6 text-white">
-                                                <div className="font-vibes text-lg md:text-2xl lg:text-3xl mb-1 md:mb-2 drop-shadow-lg">
+                                                <div className="font-vibes text-lg md:text-2xl lg:text-3xl mb-1 md:mb-2 drop-shadow-lg font-loaded" style={{
+                                                  textShadow: '2px 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5)',
+                                                  WebkitFontSmoothing: 'antialiased',
+                                                  MozOsxFontSmoothing: 'grayscale'
+                                                }}>
                                                     {image.title}
                                                 </div>
-                                                <div className="text-xs md:text-sm lg:text-base text-amber-200 line-clamp-2">
+                                                <div className="text-xs md:text-sm lg:text-base text-amber-200 line-clamp-2 font-loaded" style={{
+                                                  textShadow: '1px 1px 3px rgba(0,0,0,0.8)',
+                                                  WebkitFontSmoothing: 'antialiased',
+                                                  MozOsxFontSmoothing: 'grayscale',
+                                                  fontFamily: 'inherit'
+                                                }}>
                                                     {image.message}
                                                 </div>
                                             </div>
@@ -742,15 +809,33 @@ const Overlay: React.FC<OverlayProps> = ({
         <div 
             className="fixed inset-0 z-[140] flex items-center justify-center bg-black/40 backdrop-blur-md p-4 animate-[fadeIn_0.3s_ease-out] cursor-pointer"
             onClick={(e) => {
+                // Reset interaction time khi click
+                galleryLastInteractionRef.current = Date.now();
                 // Chỉ đóng khi click vào backdrop, không phải vào modal content
                 if (e.target === e.currentTarget) {
                     onCloseGalleryImage();
                 }
             }}
+            onMouseMove={() => {
+                // Reset interaction time khi di chuột
+                galleryLastInteractionRef.current = Date.now();
+            }}
+            onTouchMove={() => {
+                // Reset interaction time khi chạm (mobile)
+                galleryLastInteractionRef.current = Date.now();
+            }}
         >
             <div 
                 className="relative bg-gradient-to-br from-red-950/90 via-red-900/90 to-amber-950/90 backdrop-blur-lg p-4 md:p-6 rounded-xl md:rounded-2xl shadow-[0_0_80px_rgba(185,28,28,0.6)] max-w-4xl w-full mx-2 max-h-[90vh] overflow-y-auto border-2 border-red-600/30 animate-[popIn_0.4s_cubic-bezier(0.34,1.56,0.64,1)] flex flex-col"
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    // Reset interaction time khi click vào modal
+                    galleryLastInteractionRef.current = Date.now();
+                }}
+                onMouseMove={() => {
+                    // Reset interaction time khi di chuột trong modal
+                    galleryLastInteractionRef.current = Date.now();
+                }}
             >
                 {/* Confetti effect when modal opens */}
                 <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl md:rounded-2xl">
@@ -797,12 +882,23 @@ const Overlay: React.FC<OverlayProps> = ({
                 <button 
                     onClick={(e) => {
                         e.stopPropagation();
+                        // Reset interaction time
+                        galleryLastInteractionRef.current = Date.now();
                         onCloseGalleryImage();
                     }} 
+                    onMouseEnter={() => {
+                        // Reset interaction time khi hover
+                        galleryLastInteractionRef.current = Date.now();
+                    }}
                     className="absolute top-2 md:top-4 right-2 md:right-4 text-white/80 hover:text-white text-2xl md:text-3xl w-12 h-12 md:w-14 md:h-14 flex items-center justify-center rounded-full hover:bg-white/20 active:bg-white/30 transition-all duration-300 hover:scale-110 active:scale-90 z-50 cursor-pointer touch-manipulation shadow-lg"
                 >
                     &times;
                 </button>
+                
+                {/* Auto-close indicator */}
+                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-amber-300/70 text-[10px] md:text-xs animate-pulse z-50">
+                    Tự động đóng sau 10 giây nếu không tương tác
+                </div>
                 
                 {/* Image */}
                 <div className="flex-1 flex items-center justify-center overflow-hidden rounded-lg md:rounded-xl mb-3 md:mb-4 bg-black/20 p-2 md:p-0">
@@ -823,10 +919,22 @@ const Overlay: React.FC<OverlayProps> = ({
                 
                 {/* Content */}
                 <div className="text-center px-2 md:px-4 pb-2">
-                    <h3 className="text-lg md:text-2xl font-vibes text-white mb-2 md:mb-3 drop-shadow-lg">
+                    <h3 className="text-lg md:text-2xl font-vibes text-white mb-2 md:mb-3 drop-shadow-lg font-loaded" style={{
+                      textShadow: '2px 2px 6px rgba(0,0,0,0.9), 0 0 15px rgba(0,0,0,0.6)',
+                      WebkitFontSmoothing: 'antialiased',
+                      MozOsxFontSmoothing: 'grayscale',
+                      fontFeatureSettings: '"kern" 1',
+                      fontKerning: 'normal'
+                    }}>
                         {selectedGalleryImage.title}
                     </h3>
-                    <div className="font-vibes text-sm md:text-lg lg:text-xl text-amber-200 mb-2 md:mb-3 leading-relaxed">
+                    <div className="font-vibes text-sm md:text-lg lg:text-xl text-amber-200 mb-2 md:mb-3 leading-relaxed font-loaded" style={{
+                      textShadow: '1px 1px 4px rgba(0,0,0,0.8)',
+                      WebkitFontSmoothing: 'antialiased',
+                      MozOsxFontSmoothing: 'grayscale',
+                      fontFeatureSettings: '"kern" 1',
+                      fontKerning: 'normal'
+                    }}>
                         <TypewriterText text={selectedGalleryImage.message} />
                     </div>
                     <div className="w-20 md:w-24 h-0.5 md:h-1 bg-amber-400/50 mx-auto rounded-full"></div>
@@ -1098,6 +1206,7 @@ const Overlay: React.FC<OverlayProps> = ({
               {tutorialStep === 0 && "🎁 Chào mừng đến với Noel Yêu Thương!"}
               {tutorialStep === 1 && "📷 Khám phá Gallery & AI"}
               {tutorialStep === 2 && "✨ Tính năng đặc biệt"}
+              {tutorialStep === 3 && "📹 Điều khiển bằng Camera & Cử chỉ tay"}
             </h2>
             
             <div className="text-white/90 text-sm md:text-base leading-relaxed mb-6 md:mb-8 space-y-3">
@@ -1125,14 +1234,30 @@ const Overlay: React.FC<OverlayProps> = ({
                   <p className="text-amber-200">• Click vào hộp quà 3D → Mở quà đặc biệt</p>
                   <p className="text-amber-200">• Xem Ông Già Noel và tuần lộc bay quanh scene</p>
                   <p className="text-amber-200">• Ngắm hiệu ứng Aurora (Northern Lights) trên trời</p>
-                  <p className="text-xs md:text-sm text-white/70 mt-3">🎄 Chúc bạn có một Giáng sinh ấm áp!</p>
+                </>
+              )}
+              {tutorialStep === 3 && (
+                <>
+                  <p>📹 <strong>Điều khiển bằng Camera & Cử chỉ tay:</strong></p>
+                  <p className="text-amber-200 font-semibold mb-2">🎯 Các cử chỉ tay:</p>
+                  <p className="text-amber-200">• 👋 <strong>Vẫy tay</strong> → Mở gallery panel</p>
+                  <p className="text-amber-200">• 👉 <strong>Chỉ tay</strong> → Đổi ảnh trong carousel</p>
+                  <p className="text-amber-200">• ✊ <strong>Nắm tay</strong> → Đóng popup</p>
+                  <p className="text-amber-200">• 👌 <strong>OK sign</strong> → Bật pháo hoa</p>
+                  <p className="text-amber-200">• 👍 <strong>Thumbs up</strong> → Mở hộp quà</p>
+                  <p className="text-amber-200">• ✌️ <strong>Peace sign</strong> → Bật/tắt nhạc</p>
+                  <p className="text-amber-200 font-semibold mt-3 mb-2">🔍 Điều khiển ảnh:</p>
+                  <p className="text-amber-200">• <strong>Di chuyển 1 tay</strong> → Di chuyển ảnh carousel</p>
+                  <p className="text-amber-200">• <strong>2 tay pinch in/out</strong> → Zoom ảnh gần/xa cây thông</p>
+                  <p className="text-amber-200">• <strong>Xoay tay ngang</strong> → Xoay camera/scene</p>
+                  <p className="text-xs md:text-sm text-white/70 mt-3">💡 Giữ cử chỉ ổn định 1-2 giây để kích hoạt!</p>
                 </>
               )}
             </div>
             
             {/* Progress dots */}
             <div className="flex justify-center gap-2 mb-4">
-              {[0, 1, 2].map((step) => (
+              {[0, 1, 2, 3].map((step) => (
                 <div
                   key={step}
                   className={`h-2 w-2 rounded-full transition-all duration-300 ${
@@ -1156,7 +1281,7 @@ const Overlay: React.FC<OverlayProps> = ({
                 onClick={handleTutorialNext}
                 className="px-6 py-2 bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-vibes text-sm md:text-base rounded-full shadow-lg transition-all duration-300 hover:scale-110 active:scale-95 touch-manipulation border-2 border-white/20"
               >
-                {tutorialStep < 2 ? 'Tiếp theo →' : 'Bắt đầu khám phá! 🎉'}
+                {tutorialStep < 3 ? 'Tiếp theo →' : 'Bắt đầu khám phá! 🎉'}
               </button>
             </div>
           </div>

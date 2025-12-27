@@ -13,6 +13,10 @@ interface PhotoCarouselProps {
   speed?: number;
   frameShape?: FrameShape;
   autoChangeShape?: boolean; // Tự động đổi hình dạng
+  enableRotation?: boolean; // Bật/tắt xoay
+  rotationAngle?: number; // Góc xoay từ gesture (radians)
+  position?: [number, number, number]; // Vị trí tùy chỉnh (trước cây thông)
+  enableFloating?: boolean; // Bật floating animation
 }
 
 const PhotoCarousel: React.FC<PhotoCarouselProps> = ({ 
@@ -22,10 +26,15 @@ const PhotoCarousel: React.FC<PhotoCarouselProps> = ({
   height = 1.5,
   speed = 0.3,
   frameShape = 'circle',
-  autoChangeShape = true
+  autoChangeShape = true,
+  enableRotation = false, // Tắt xoay mặc định
+  rotationAngle = 0, // Góc xoay từ gesture
+  position, // Vị trí tùy chỉnh
+  enableFloating = true // Bật floating mặc định
 }) => {
   const [currentShape, setCurrentShape] = useState<FrameShape>(frameShape);
-  const shapes: FrameShape[] = ['circle', 'square', 'rectangle', 'triangle', 'diamond', 'hexagon'];
+  // Move shapes array outside component or use useMemo to avoid recreating on each render
+  const shapes = useMemo<FrameShape[]>(() => ['circle', 'square', 'rectangle', 'triangle', 'diamond', 'hexagon'], []);
   
   // Auto change shape every 8 seconds
   useEffect(() => {
@@ -73,22 +82,49 @@ const PhotoCarousel: React.FC<PhotoCarouselProps> = ({
     return () => clearTimeout(timer);
   }, [images.length]);
 
-  // Smooth rotation with variable speed based on focus
+  // Smooth rotation with variable speed based on focus (chỉ khi enableRotation = true)
   useFrame((state, delta) => {
     if (groupRef.current) {
       // Smooth acceleration/deceleration
       entranceProgressRef.current = Math.min(1, entranceProgressRef.current + delta * 0.5);
       
-      // Variable speed: chậm hơn khi có ảnh được hover
-      const currentSpeed = hoveredIndex !== null ? speed * 0.3 : speed;
-      groupRef.current.rotation.y += delta * currentSpeed * entranceProgressRef.current;
+      // Chỉ xoay nếu enableRotation = true
+      if (enableRotation) {
+        // Nếu có rotationAngle từ gesture, sử dụng nó (smooth interpolation)
+        if (rotationAngle !== undefined && rotationAngle !== 0) {
+          const targetRotation = rotationAngle;
+          const currentRotation = groupRef.current.rotation.y;
+          const diff = targetRotation - currentRotation;
+          // Normalize angle difference
+          const normalizedDiff = ((diff % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+          const shortestDiff = normalizedDiff > Math.PI ? normalizedDiff - Math.PI * 2 : normalizedDiff;
+          // Smooth lerp
+          groupRef.current.rotation.y += shortestDiff * Math.min(delta * 5, 0.1);
+        } else {
+          // Auto rotation
+          const currentSpeed = hoveredIndex !== null ? speed * 0.3 : speed;
+          groupRef.current.rotation.y += delta * currentSpeed * entranceProgressRef.current;
+        }
+      }
     }
   });
 
-  // Calculate position for each photo with spiral entrance
+  // Calculate position for each photo
   const getPhotoPosition = (index: number, total: number, progress: number = 1): [number, number, number] => {
+    // Nếu có position tùy chỉnh, sử dụng nó
+    if (position) {
+      return [
+        position[0] + (index % 3 - 1) * 0.8, // Spread ảnh ngang
+        position[1] + Math.floor(index / 3) * 0.6, // Spread ảnh dọc
+        position[2]
+      ];
+    }
+    
+    // Layout mặc định: ảnh xếp trước cây thông (không xoay)
     const baseAngle = (index / total) * Math.PI * 2;
-    const currentAngle = baseAngle + (groupRef.current?.rotation.y || 0);
+    const currentAngle = enableRotation 
+      ? baseAngle + (groupRef.current?.rotation.y || 0)
+      : baseAngle; // Không xoay nếu enableRotation = false
     
     // Spiral entrance: ảnh bay vào từ xa
     const entranceRadius = radius * (0.3 + progress * 0.7);
@@ -156,6 +192,8 @@ const PhotoCarousel: React.FC<PhotoCarouselProps> = ({
           radius={radius}
           height={height}
           frameShape={currentShape}
+          enableFloating={enableFloating}
+          position={position}
         />;
       })}
     </group>
@@ -178,7 +216,12 @@ const PhotoItem: React.FC<{
   radius: number;
   height: number;
   frameShape: FrameShape;
-}> = ({ image, index, total, groupRef, visibleIndices, entranceProgress, hoveredIndex, clickedIndex, onHover, onClick, camera, radius, height, frameShape }) => {
+  enableFloating?: boolean;
+  position?: [number, number, number] | null;
+}> = ({ image, index, total, groupRef, visibleIndices, entranceProgress, hoveredIndex, clickedIndex, onHover, onClick, camera, radius, height, frameShape, enableFloating = true, position }) => {
+  // Early return BEFORE hooks - this is critical for React hooks rules
+  if (!visibleIndices.has(index) && entranceProgress === 0) return null;
+  
   const itemRef = useRef<THREE.Group>(null);
   const [inFocus, setInFocus] = useState(false);
   const [distance, setDistance] = useState(0);
@@ -217,9 +260,23 @@ const PhotoItem: React.FC<{
   });
 
   const getPhotoPosition = (progress: number = 1): [number, number, number] => {
+    // Nếu có position tùy chỉnh, sử dụng nó (layout grid)
+    if (position) {
+      const cols = Math.ceil(Math.sqrt(total));
+      const row = Math.floor(index / cols);
+      const col = index % cols;
+      const spacing = 0.8;
+      return [
+        position[0] + (col - (cols - 1) / 2) * spacing,
+        position[1] + (Math.ceil(total / cols) - 1 - row) * spacing * 0.8,
+        position[2]
+      ];
+    }
+    
+    // Layout mặc định: ảnh xếp trước cây thông (không xoay)
     if (!groupRef.current) return [0, 0, 0];
     const baseAngle = (index / total) * Math.PI * 2;
-    const currentAngle = baseAngle + groupRef.current.rotation.y;
+    const currentAngle = baseAngle; // Không xoay
     
     // Sử dụng smoothRadius thay vì radius trực tiếp
     const entranceRadius = smoothRadiusRef.current * (0.3 + progress * 0.7);
@@ -242,17 +299,32 @@ const PhotoItem: React.FC<{
   // Opacity based on distance (depth of field)
   const opacity = Math.max(0.4, Math.min(1, 1 - (distance - 4) * 0.15));
   
-  if (!visibleIndices.has(index) && entranceProgress === 0) return null;
+  // Floating animation state
+  const floatOffsetRef = useRef({ x: 0, y: 0, z: 0 });
+  
+  useFrame((state, delta) => {
+    if (enableFloating && itemRef.current) {
+      // Gentle floating animation
+      const time = state.clock.elapsedTime;
+      floatOffsetRef.current.y = Math.sin(time * 0.8 + index) * 0.15; // Float up/down
+      floatOffsetRef.current.x = Math.cos(time * 0.5 + index) * 0.1; // Float left/right
+      floatOffsetRef.current.z = Math.sin(time * 0.6 + index) * 0.08; // Float forward/back
+    }
+  });
   
   return (
     <Float
-      speed={1.5}
-      rotationIntensity={0.3}
-      floatIntensity={0.5}
+      speed={enableFloating ? 1.5 : 0}
+      rotationIntensity={enableFloating ? 0.3 : 0}
+      floatIntensity={enableFloating ? 0.5 : 0}
     >
       <group 
         ref={itemRef}
-        position={[x, y, z]}
+        position={[
+          x + floatOffsetRef.current.x,
+          y + floatOffsetRef.current.y,
+          z + floatOffsetRef.current.z
+        ]}
         scale={finalScale}
         onPointerEnter={() => onHover(index)}
         onPointerLeave={() => onHover(null)}

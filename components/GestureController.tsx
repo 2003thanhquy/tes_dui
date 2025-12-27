@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 interface GestureControllerProps {
   onGesture?: (gesture: string) => void;
   onZoom?: (zoomDelta: number) => void; // zoomDelta: -1 (zoom in), +1 (zoom out), 0 (no change)
+  onPositionChange?: (deltaX: number, deltaY: number, deltaZ: number) => void; // Di chuyển ảnh
   enabled?: boolean;
 }
 
@@ -21,6 +22,8 @@ export type GestureType =
 const GestureController: React.FC<GestureControllerProps> = ({ 
   onGesture, 
   onZoom,
+  onPositionChange,
+  onRotationChange,
   enabled = true 
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -41,6 +44,16 @@ const GestureController: React.FC<GestureControllerProps> = ({
   const lastGestureRef = useRef<GestureType>('none');
   const gestureCountRef = useRef<Record<string, number>>({});
   const lastGestureTimeRef = useRef<Record<string, number>>({});
+  const gestureCooldownRef = useRef<Record<string, number>>({}); // Cooldown sau mỗi gesture
+  const gestureStabilityRef = useRef<Record<string, number>>({}); // Đếm số frame gesture giữ ổn định
+  const lastProcessedFrameRef = useRef<number>(0);
+  const frameSkipCount = 1; // Process mỗi frame để mượt hơn
+  const lastPositionUpdateRef = useRef<number>(0);
+  const positionUpdateCooldown = 16; // Update mỗi 16ms (60fps) để cực kỳ mượt
+  const globalCooldownRef = useRef<number>(0); // Global cooldown cho tất cả gestures
+  const lockedGestureRef = useRef<GestureType | null>(null); // Gesture đang được "lock" (không cho chuyển)
+  const gestureTransitionCountRef = useRef<Record<string, number>>({}); // Đếm số lần gesture mới xuất hiện
+  const MIN_TRANSITION_FRAMES = 6; // Cần 6 frame liên tiếp mới chuyển gesture (giảm từ 10 để nhạy hơn)
 
   // Initialize TensorFlow.js HandPose model (optional - fallback to motion detection)
   useEffect(() => {
@@ -191,52 +204,71 @@ const GestureController: React.FC<GestureControllerProps> = ({
     const thumbMCP = landmarks[2];
     const indexMCP = landmarks[5];
 
-    // Calculate distances
-    const thumbIndexDist = Math.sqrt(
-      Math.pow(thumbTip.x - indexTip.x, 2) + 
-      Math.pow(thumbTip.y - indexTip.y, 2)
-    );
-    
-    const indexMiddleDist = Math.sqrt(
-      Math.pow(indexTip.x - middleTip.x, 2) + 
-      Math.pow(indexTip.y - middleTip.y, 2)
-    );
-
-    // Gesture detection logic
-    // OK sign: thumb and index finger form a circle
-    if (thumbIndexDist < 0.05) {
-      return 'ok';
-    }
-
-    // Fist: all fingers closed
+    // Gesture detection logic với priority và conflict resolution
+    // Tính số ngón tay đang giơ lên
     const fingersUp = [
       thumbTip.y < thumbMCP.y,
       indexTip.y < indexMCP.y,
       middleTip.y < landmarks[9].y,
       ringTip.y < landmarks[13].y,
       pinkyTip.y < landmarks[17].y
-    ].filter(Boolean).length;
+    ];
+    const fingersUpCount = fingersUp.filter(Boolean).length;
+    
+    // Tính khoảng cách giữa các ngón tay để phân biệt rõ hơn
+    const thumbIndexDist = Math.sqrt(
+      Math.pow(thumbTip.x - indexTip.x, 2) + 
+      Math.pow(thumbTip.y - indexTip.y, 2)
+    );
+    const indexMiddleDist = Math.sqrt(
+      Math.pow(indexTip.x - middleTip.x, 2) + 
+      Math.pow(indexTip.y - middleTip.y, 2)
+    );
+    const middleRingDist = Math.sqrt(
+      Math.pow(middleTip.x - ringTip.x, 2) + 
+      Math.pow(middleTip.y - ringTip.y, 2)
+    );
+    
+    // Priority 1: OK sign - thumb và index tạo vòng tròn (phải check trước fist)
+    // OK sign có thumb và index gần nhau NHƯNG các ngón khác không đóng hoàn toàn
+    if (thumbIndexDist < 0.05 && fingersUpCount >= 1) {
+      // Kiểm tra thêm: middle, ring, pinky phải không đóng hoàn toàn
+      const otherFingersClosed = !fingersUp[2] && !fingersUp[3] && !fingersUp[4];
+      if (otherFingersClosed) {
+        return 'ok';
+      }
+    }
 
-    if (fingersUp === 0) {
+    // Priority 2: Fist - tất cả ngón tay đóng (phải check sau OK)
+    // Fist: không có ngón nào giơ lên VÀ thumb không tạo vòng với index
+    if (fingersUpCount === 0 && thumbIndexDist > 0.08) {
       return 'fist';
     }
 
-    // Point: only index finger up
-    if (fingersUp === 1 && indexTip.y < indexMCP.y) {
-      return 'point';
-    }
-
-    // Peace: index and middle up
-    if (fingersUp === 2 && indexTip.y < indexMCP.y && middleTip.y < landmarks[9].y) {
+    // Priority 3: Peace sign - index và middle giơ lên, các ngón khác đóng
+    if (fingersUpCount === 2 && 
+        fingersUp[1] && fingersUp[2] && // Index và middle up
+        !fingersUp[0] && !fingersUp[3] && !fingersUp[4] && // Thumb, ring, pinky down
+        indexMiddleDist > 0.1) { // Index và middle cách xa nhau
       return 'peace';
     }
 
-    // Thumbs up: thumb up, others down
-    if (thumbTip.y < thumbMCP.y && fingersUp === 1) {
+    // Priority 4: Point - chỉ index giơ lên
+    if (fingersUpCount === 1 && 
+        fingersUp[1] && // Chỉ index up
+        !fingersUp[0] && !fingersUp[2] && !fingersUp[3] && !fingersUp[4]) {
+      return 'point';
+    }
+
+    // Priority 5: Thumbs up - thumb giơ lên, các ngón khác đóng
+    if (fingersUpCount === 1 && 
+        fingersUp[0] && // Chỉ thumb up
+        !fingersUp[1] && !fingersUp[2] && !fingersUp[3] && !fingersUp[4]) {
       return 'thumbs_up';
     }
 
-    // Wave: hand moving horizontally (detected over time)
+    // Wave: hand moving horizontally (detected over time - cần motion history)
+    // Tạm thời return 'none' vì wave cần motion detection
     return 'none';
   }, []);
 
@@ -247,34 +279,104 @@ const GestureController: React.FC<GestureControllerProps> = ({
   const previousHandDistanceRef = useRef<number | null>(null);
   const zoomHistoryRef = useRef<number[]>([]);
 
-  // Gesture recognition with debouncing - MUST be defined before processFrame
+  // Gesture recognition with improved debouncing, cooldown, and gesture locking - MUST be defined before processFrame
   const handleGestureDetected = useCallback((gesture: GestureType) => {
+    const now = Date.now();
+    
+    // Global cooldown: không trigger bất kỳ gesture nào trong 2 giây sau khi trigger
+    if (now - globalCooldownRef.current < 2000) { // 2 giây global cooldown (giảm từ 4s để nhạy hơn)
+      return;
+    }
+    
+    // Check cooldown: không trigger gesture nếu vừa trigger gần đây
+    const cooldownTime = gestureCooldownRef.current[gesture] || 0;
+    if (now - cooldownTime < 3000) { // 3 giây cooldown cho từng gesture (giảm từ 5s để nhạy hơn)
+      return;
+    }
+    
     if (gesture === 'none') {
+      // Reset tất cả gesture counters khi không có gesture
+      Object.keys(gestureCountRef.current).forEach(key => {
+        gestureCountRef.current[key] = 0;
+        gestureStabilityRef.current[key] = 0;
+        gestureTransitionCountRef.current[key] = 0;
+      });
+      // Unlock gesture khi không có gesture
+      if (lockedGestureRef.current) {
+        lockedGestureRef.current = null;
+      }
       setDetectedGesture(null);
       setGestureConfidence(0);
       return;
     }
 
-    const now = Date.now();
+    // GESTURE LOCKING: Nếu đang lock một gesture, chỉ xử lý gesture đó
+    const currentLocked = lockedGestureRef.current;
+    if (currentLocked && currentLocked !== gesture) {
+      // Đang lock gesture khác, cần kiểm tra transition
+      gestureTransitionCountRef.current[gesture] = (gestureTransitionCountRef.current[gesture] || 0) + 1;
+      
+      // Chỉ unlock và chuyển gesture nếu gesture mới xuất hiện liên tiếp 10 frame
+      if (gestureTransitionCountRef.current[gesture] >= MIN_TRANSITION_FRAMES) {
+        // Unlock gesture cũ và lock gesture mới
+        lockedGestureRef.current = gesture;
+        // Reset counters cho gesture cũ
+        gestureCountRef.current[currentLocked] = 0;
+        gestureStabilityRef.current[currentLocked] = 0;
+        gestureTransitionCountRef.current[currentLocked] = 0;
+        // Reset counter cho gesture mới
+        gestureCountRef.current[gesture] = 0;
+        gestureStabilityRef.current[gesture] = 0;
+        gestureTransitionCountRef.current[gesture] = 0;
+        console.log(`🔄 Gesture transition: ${currentLocked} → ${gesture}`);
+      } else {
+        // Vẫn đang trong quá trình transition, reset counter cho gesture cũ
+        gestureTransitionCountRef.current[currentLocked] = 0;
+        return; // Không xử lý gesture mới cho đến khi transition hoàn tất
+      }
+    } else if (!currentLocked) {
+      // Chưa lock gesture nào, lock gesture hiện tại
+      lockedGestureRef.current = gesture;
+      gestureTransitionCountRef.current[gesture] = 0;
+    } else {
+      // Đang lock đúng gesture, reset transition counter
+      gestureTransitionCountRef.current[gesture] = 0;
+    }
+
     const lastTime = lastGestureTimeRef.current[gesture] || 0;
     
-    // Debounce: only trigger if gesture is held for 500ms
-    if (now - lastTime < 500) {
-      gestureCountRef.current[gesture] = (gestureCountRef.current[gesture] || 0) + 1;
+    // Tăng stability counter nếu gesture giữ ổn định
+    if (now - lastTime < 250) { // Trong 250ms
+      gestureStabilityRef.current[gesture] = (gestureStabilityRef.current[gesture] || 0) + 1;
     } else {
-      gestureCountRef.current[gesture] = 1;
+      // Reset nếu gesture thay đổi (nhưng vẫn giữ lock)
+      gestureStabilityRef.current[gesture] = 1;
+      gestureCountRef.current[gesture] = 0;
+    }
+    
+    // Chỉ đếm nếu gesture ổn định ít nhất 4 frame liên tiếp
+    if (gestureStabilityRef.current[gesture] >= 4) {
+      if (now - lastTime < 600) { // Debounce 600ms (giảm để đạt 1-2 giây)
+        gestureCountRef.current[gesture] = (gestureCountRef.current[gesture] || 0) + 1;
+      } else {
+        gestureCountRef.current[gesture] = 1;
+      }
     }
 
     lastGestureTimeRef.current[gesture] = now;
 
-    // Update UI feedback
-    setDetectedGesture(gesture);
-    const confidence = Math.min(100, (gestureCountRef.current[gesture] / 3) * 100);
-    setGestureConfidence(confidence);
+    // Update UI feedback (chỉ hiển thị khi có stability)
+    if (gestureStabilityRef.current[gesture] >= 4) {
+      setDetectedGesture(gesture);
+      const confidence = Math.min(100, (gestureCountRef.current[gesture] / 3) * 100); // Cần 3 lần để đạt 1-2 giây
+      setGestureConfidence(confidence);
+    }
 
-    // Trigger gesture if detected 3+ times (held for ~1.5s)
-    if (gestureCountRef.current[gesture] >= 3 && lastGestureRef.current !== gesture) {
+    // Trigger gesture nếu detected 3+ lần (held for ~1-2s) và gesture khác với lần trước
+    if (gestureCountRef.current[gesture] >= 3 && lastGestureRef.current !== gesture) { // Giảm xuống 3 để đạt 1-2 giây
       lastGestureRef.current = gesture;
+      gestureCooldownRef.current[gesture] = now; // Set cooldown cho gesture này
+      globalCooldownRef.current = now; // Set global cooldown
       console.log('🎯 Gesture triggered:', gesture);
       onGesture?.(gesture);
       
@@ -282,12 +384,22 @@ const GestureController: React.FC<GestureControllerProps> = ({
       setDetectedGesture(gesture);
       setGestureConfidence(100);
       
-      // Reset counter after showing feedback
+      // Reset counter sau khi trigger
+      gestureCountRef.current[gesture] = 0;
+      gestureStabilityRef.current[gesture] = 0;
+      
+      // Unlock gesture sau khi trigger để cho phép gesture mới
       setTimeout(() => {
-        gestureCountRef.current[gesture] = 0;
-        lastGestureRef.current = 'none';
-        setDetectedGesture(null);
-        setGestureConfidence(0);
+        lockedGestureRef.current = null;
+      }, 1000); // Unlock sau 1s
+      
+      // Reset UI sau 2s
+      setTimeout(() => {
+        if (lastGestureRef.current === gesture) {
+          lastGestureRef.current = 'none';
+          setDetectedGesture(null);
+          setGestureConfidence(0);
+        }
       }, 2000);
     }
   }, [onGesture]);
@@ -369,6 +481,14 @@ const GestureController: React.FC<GestureControllerProps> = ({
     return () => clearInterval(interval);
   }, [isActive, permissionGranted, showPreview]); // Run when preview window renders
 
+  // Auto-start camera when enabled
+  useEffect(() => {
+    if (enabled && !isActive && !permissionGranted && !error) {
+      console.log('📹 Auto-starting camera (enabled and not active)...');
+      startCamera();
+    }
+  }, [enabled, isActive, permissionGranted, error, startCamera]);
+
   // Initialize HandPose model
   useEffect(() => {
     if (!enabled || !isActive) return;
@@ -391,6 +511,13 @@ const GestureController: React.FC<GestureControllerProps> = ({
   // Process video frame with gesture detection
   const processFrame = useCallback(async () => {
     if (!videoRef.current || !canvasRef.current || !isActive) return;
+
+    // Frame skipping: chỉ process mỗi 2 frame để giảm tải và tránh false positives
+    lastProcessedFrameRef.current++;
+    if (lastProcessedFrameRef.current % frameSkipCount !== 0) {
+      animationFrameRef.current = requestAnimationFrame(processFrame);
+      return;
+    }
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -472,6 +599,107 @@ const GestureController: React.FC<GestureControllerProps> = ({
           } else {
             previousHandDistanceRef.current = null;
             zoomHistoryRef.current = [];
+          }
+          
+          // Detect hand movement for position control (1 hand movement)
+          // Chỉ xử lý nếu không có gesture đang được detect (tránh conflict)
+          if (predictions.length === 1 && lastGestureRef.current === 'none') {
+            const hand = predictions[0].landmarks;
+            const wrist = hand[0];
+            const currentPos = { x: wrist.x, y: wrist.y };
+            
+            if (previousHandPositionRef.current) {
+              const deltaX = currentPos.x - previousHandPositionRef.current.x;
+              const deltaY = currentPos.y - previousHandPositionRef.current.y;
+              
+              positionHistoryRef.current.push({ x: deltaX, y: deltaY });
+              if (positionHistoryRef.current.length > 12) { // Tăng buffer lên 12 để cực kỳ mượt
+                positionHistoryRef.current.shift();
+              }
+              
+              // Average movement với weighted average (recent frames có trọng số cao hơn)
+              const weights = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.2, 1.2];
+              const weightedSumX = positionHistoryRef.current.reduce((sum, p, idx) => {
+                const weight = weights[Math.min(idx, weights.length - 1)] || 1;
+                return sum + p.x * weight;
+              }, 0);
+              const weightedSumY = positionHistoryRef.current.reduce((sum, p, idx) => {
+                const weight = weights[Math.min(idx, weights.length - 1)] || 1;
+                return sum + p.y * weight;
+              }, 0);
+              const weightSum = positionHistoryRef.current.reduce((sum, _, idx) => {
+                const weight = weights[Math.min(idx, weights.length - 1)] || 1;
+                return sum + weight;
+              }, 0);
+              
+              const avgDeltaX = weightedSumX / weightSum;
+              const avgDeltaY = weightedSumY / weightSum;
+              
+              // Giảm threshold để responsive hơn
+              const now = Date.now();
+              if ((Math.abs(avgDeltaX) > 0.01 || Math.abs(avgDeltaY) > 0.01) && 
+                  (now - lastPositionUpdateRef.current) >= positionUpdateCooldown) {
+                // Map hand movement to 3D position với scale cao hơn để mượt và responsive
+                onPositionChange?.(
+                  avgDeltaX * 0.4, // Tăng scale để responsive hơn
+                  -avgDeltaY * 0.4, // Invert Y (hand up = move up)
+                  0 // Z controlled by zoom
+                );
+                lastPositionUpdateRef.current = now;
+              }
+              
+              // Detect hand rotation for camera/scene rotation
+              // Tính góc xoay của bàn tay dựa trên hướng từ wrist đến middle finger
+              const middleFinger = hand[9];
+              const handDirection = Math.atan2(
+                middleFinger.y - wrist.y,
+                middleFinger.x - wrist.x
+              );
+              
+              if (previousHandRotationRef.current !== null) {
+                let deltaRotation = handDirection - previousHandRotationRef.current;
+                
+                // Normalize angle difference to [-PI, PI]
+                if (deltaRotation > Math.PI) deltaRotation -= 2 * Math.PI;
+                if (deltaRotation < -Math.PI) deltaRotation += 2 * Math.PI;
+                
+                rotationHistoryRef.current.push(deltaRotation);
+                if (rotationHistoryRef.current.length > 8) { // Tăng buffer để mượt hơn
+                  rotationHistoryRef.current.shift();
+                }
+                
+                // Average rotation với weighted average
+                const weights = [0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1];
+                const weightedSum = rotationHistoryRef.current.reduce((sum, val, idx) => {
+                  const weight = weights[Math.min(idx, weights.length - 1)] || 1;
+                  return sum + val * weight;
+                }, 0);
+                const weightSum = rotationHistoryRef.current.reduce((sum, _, idx) => {
+                  const weight = weights[Math.min(idx, weights.length - 1)] || 1;
+                  return sum + weight;
+                }, 0);
+                const avgRotation = weightedSum / weightSum;
+                
+                // Threshold cho rotation (nhỏ hơn để sensitive và mượt hơn)
+                if (Math.abs(avgRotation) > 0.008 && (now - lastPositionUpdateRef.current) >= positionUpdateCooldown) {
+                  // Xoay camera/scene: deltaX = xoay ngang (yaw), deltaY = xoay dọc (pitch)
+                  // Chỉ xoay ngang (yaw) khi xoay tay ngang
+                  onRotationChange?.(
+                    avgRotation * 0.6, // Tăng scale để mượt và responsive hơn
+                    0 // Không xoay dọc (pitch) - có thể thêm sau
+                  );
+                }
+              }
+              
+              previousHandRotationRef.current = handDirection;
+            }
+            
+            previousHandPositionRef.current = currentPos;
+          } else {
+            previousHandPositionRef.current = null;
+            positionHistoryRef.current = [];
+            previousHandRotationRef.current = null;
+            rotationHistoryRef.current = [];
           }
         }
       } catch (err) {
@@ -701,7 +929,7 @@ const GestureController: React.FC<GestureControllerProps> = ({
           </div>
 
           {/* Video preview - Always render video element */}
-          <div className="relative w-full h-[calc(100%-36px)] bg-black overflow-hidden">
+          <div className="relative w-full h-[calc(100%-36px)] bg-black overflow-hidden rounded-b-xl">
             <video
               ref={videoRef}
               autoPlay
@@ -713,7 +941,11 @@ const GestureController: React.FC<GestureControllerProps> = ({
                 minWidth: '100%',
                 minHeight: '100%',
                 backgroundColor: '#000',
-                display: 'block'
+                display: 'block',
+                imageRendering: 'auto',
+                WebkitTransform: 'scaleX(-1)',
+                MozTransform: 'scaleX(-1)',
+                msTransform: 'scaleX(-1)'
               }}
               onLoadedMetadata={() => {
                 console.log('📹 Preview video onLoadedMetadata: Video metadata loaded');
@@ -751,49 +983,65 @@ const GestureController: React.FC<GestureControllerProps> = ({
               </div>
             )}
             
-            {/* Gesture detection overlay */}
+            {/* Gesture detection overlay - Không che video, hiển thị ở góc */}
             {detectedGesture && detectedGesture !== 'none' && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm">
-                <div className="text-5xl mb-2 animate-pulse">
-                  {detectedGesture === 'wave' && '👋'}
-                  {detectedGesture === 'point' && '👆'}
-                  {detectedGesture === 'fist' && '✊'}
-                  {detectedGesture === 'ok' && '👌'}
-                  {detectedGesture === 'thumbs_up' && '👍'}
-                  {detectedGesture === 'peace' && '✌️'}
+              <div className="absolute top-2 right-2 bg-gradient-to-br from-black/90 via-black/85 to-black/90 backdrop-blur-lg rounded-lg p-3 border-2 border-white/30 shadow-2xl min-w-[140px] animate-[slideIn_0.3s_ease-out]">
+                {/* Emoji cử chỉ */}
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="text-3xl animate-pulse">
+                    {detectedGesture === 'wave' && '👋'}
+                    {detectedGesture === 'point' && '👆'}
+                    {detectedGesture === 'fist' && '✊'}
+                    {detectedGesture === 'ok' && '👌'}
+                    {detectedGesture === 'thumbs_up' && '👍'}
+                    {detectedGesture === 'peace' && '✌️'}
+                  </div>
+                  <div className="text-white text-sm font-bold drop-shadow-lg">
+                    {detectedGesture === 'wave' && 'Vẫy tay'}
+                    {detectedGesture === 'point' && 'Chỉ tay'}
+                    {detectedGesture === 'fist' && 'Nắm tay'}
+                    {detectedGesture === 'ok' && 'OK Sign'}
+                    {detectedGesture === 'thumbs_up' && 'Thumbs Up'}
+                    {detectedGesture === 'peace' && 'Peace Sign'}
+                  </div>
                 </div>
-                <div className="text-white text-sm font-bold mb-2 drop-shadow-lg">
-                  {detectedGesture === 'wave' && 'Vẫy tay'}
-                  {detectedGesture === 'point' && 'Chỉ tay'}
-                  {detectedGesture === 'fist' && 'Nắm tay'}
-                  {detectedGesture === 'ok' && 'OK Sign'}
-                  {detectedGesture === 'thumbs_up' && 'Thumbs Up'}
-                  {detectedGesture === 'peace' && 'Peace Sign'}
-                </div>
-                <div className="w-40 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                
+                {/* Progress bar */}
+                <div className="w-full h-1.5 bg-white/20 rounded-full overflow-hidden mb-1.5">
                   <div 
-                    className="h-full bg-gradient-to-r from-green-400 via-green-500 to-green-600 transition-all duration-300 shadow-lg"
+                    className="h-full bg-gradient-to-r from-green-400 via-green-500 to-green-600 transition-all duration-150 shadow-lg"
                     style={{ width: `${gestureConfidence}%` }}
                   ></div>
                 </div>
-                <div className="text-white/80 text-xs mt-1 font-semibold">
-                  {Math.round(gestureConfidence)}% - Giữ để kích hoạt
+                
+                {/* Thông tin kích hoạt */}
+                <div className="text-white/90 text-[10px] font-semibold text-center">
+                  {Math.round(gestureConfidence)}% - Giữ 1-2s
                 </div>
               </div>
             )}
 
-            {/* Status indicator */}
-            <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/60 px-2 py-1 rounded-full backdrop-blur-sm">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-white text-[10px] font-semibold">Đang quay</span>
-            </div>
-
-            {/* Instructions hint */}
+            {/* Status indicator - Chỉ hiển thị khi không có gesture */}
             {!detectedGesture && (
-              <div className="absolute bottom-2 left-2 right-2 bg-black/70 px-2 py-1.5 rounded backdrop-blur-sm border border-white/10">
-                <div className="text-white/90 text-[10px] text-center space-y-0.5">
-                  <div className="font-semibold">👋 Vẫy tay | 👆 Chỉ tay | ✊ Nắm tay</div>
-                  <div className="text-white/70 text-[9px]">🤏 2 tay gần/xa = Phóng to/Thu nhỏ ảnh</div>
+              <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/70 px-2 py-1 rounded-full backdrop-blur-md border border-white/20">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-white text-[10px] font-semibold">Đang quay</span>
+              </div>
+            )}
+
+            {/* Instructions hint - Rõ ràng, dễ hiểu */}
+            {!detectedGesture && (
+              <div className="absolute bottom-2 left-2 right-2 bg-black/80 px-3 py-2 rounded-lg backdrop-blur-md border border-white/20 shadow-lg">
+                <div className="text-white text-[11px] text-center space-y-1.5">
+                  <div className="font-bold text-white">Cử chỉ tay:</div>
+                  <div className="flex items-center justify-center gap-2 flex-wrap">
+                    <span className="bg-white/10 px-2 py-0.5 rounded">👋 Vẫy</span>
+                    <span className="bg-white/10 px-2 py-0.5 rounded">👆 Chỉ</span>
+                    <span className="bg-white/10 px-2 py-0.5 rounded">✊ Nắm</span>
+                  </div>
+                  <div className="text-white/80 text-[10px] pt-1 border-t border-white/10">
+                    🤏 2 tay gần/xa = Zoom | 🔄 Xoay tay = Xoay camera
+                  </div>
                 </div>
               </div>
             )}
