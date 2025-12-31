@@ -20,43 +20,8 @@ const SimpleNewYearPage: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isAudioReady, setIsAudioReady] = useState(false);
 
-  // ... (existing code)
-
-  const handleInteraction = async () => {
-    if (!isAudioReady) return; // Prevent early interaction
-    if (audioRef.current) {
-      // ...
-    }
-  };
-
-  if (!hasInteracted) {
-    return (
-      <div
-        onClick={handleInteraction}
-        className={`fixed inset-0 z-50 bg-red-950 flex flex-col items-center justify-center transition-colors duration-500 ${isAudioReady ? 'cursor-pointer hover:bg-red-900' : 'cursor-wait'}`}
-      >
-        <div className={`text-center ${isAudioReady ? 'animate-pulse' : 'opacity-50'}`}>
-          <div className="text-6xl mb-4">🎁</div>
-          <h1 className="text-3xl text-yellow-400 font-script mb-2">
-            {isAudioReady ? 'Bạn có một món quà!' : 'Đang chuẩn bị quà...'}
-          </h1>
-          <p className="text-white/80">
-            {isAudioReady ? 'Chạm để mở quà & bật nhạc 🎶' : 'Đang tải nhạc... vui lòng đợi ⏳'}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // ... (inside return)
-  <audio
-    ref={audioRef}
-    loop
-    preload="auto"
-    src="/happynewyear.mp3"
-    onCanPlay={() => setIsAudioReady(true)}
-    onError={(e) => console.error("Audio loading error:", e)}
-  />
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
 
   // Rotating content state
   const [currentWishIndex, setCurrentWishIndex] = useState(0);
@@ -71,8 +36,6 @@ const SimpleNewYearPage: React.FC = () => {
     }, 3000);
     return () => clearInterval(interval);
   }, []);
-
-
 
   // Fireworks Animation Logic
   useEffect(() => {
@@ -172,10 +135,10 @@ const SimpleNewYearPage: React.FC = () => {
       clearInterval(fwInterval);
       window.removeEventListener('resize', resizeHandler);
     };
-  }, []);
+  }, [hasInteracted]);
 
   const handleInteraction = async () => {
-    if (!isAudioReady) return;
+
 
     if (audioRef.current) {
       try {
@@ -192,6 +155,39 @@ const SimpleNewYearPage: React.FC = () => {
       setHasInteracted(true);
     }
   };
+
+  if (!hasInteracted) {
+    return (
+      <div
+        onClick={handleInteraction}
+        className="fixed inset-0 z-50 bg-red-950 flex flex-col items-center justify-center cursor-pointer hover:bg-red-900 transition-colors duration-500"
+      >
+        <div className="text-center animate-pulse">
+          <div className="text-6xl mb-4">🎁</div>
+          <h1 className="text-3xl text-yellow-400 font-script mb-2">
+            Bạn có một món quà!
+          </h1>
+          <p className="text-white/80">
+            Chạm để mở quà & bật nhạc 🎶
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ... (inside return)
+  <audio
+    ref={audioRef}
+    loop
+    preload="auto"
+    src="/happynewyear.mp3"
+    onCanPlay={() => setIsAudioReady(true)}
+    onError={(e) => console.error("Audio loading error:", e)}
+  />
+
+
+
+
 
 
 
@@ -256,7 +252,10 @@ const SimpleNewYearPage: React.FC = () => {
             </span>
           </h1>
 
-          <p className="font-script text-3xl md:text-5xl text-pink-300 mt-4 neon-text animate-bounce-slow">
+          <p className="font-vibes text-2xl md:text-3xl text-yellow-100 mt-6 mb-2 opacity-90">
+            Gửi tặng:
+          </p>
+          <p className="font-script text-3xl md:text-5xl text-pink-300 neon-text animate-bounce-slow">
             {displayName} ❤️
           </p>
 
