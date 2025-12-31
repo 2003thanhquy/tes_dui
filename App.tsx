@@ -1,5 +1,7 @@
 import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import TetPage from './components/TetPage';
+import SimpleNewYearPage from './components/SimpleNewYearPage';
 import { loadGalleryImages, getRecommendedImageCount, GalleryImage } from './utils/imageLoader';
 
 // --- GALLERY IMAGES ---
@@ -14,7 +16,15 @@ const GALLERY_IMAGES: GalleryImage[] = loadGalleryImages(MAX_IMAGES_TO_DISPLAY, 
  * for better performance and user experience.
  */
 const App: React.FC = () => {
-  return <TetPage galleryImages={GALLERY_IMAGES} />;
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<TetPage galleryImages={GALLERY_IMAGES} />} />
+        <Route path="/page" element={<SimpleNewYearPage />} />
+        <Route path="/page/:name" element={<SimpleNewYearPage />} />
+      </Routes>
+    </BrowserRouter>
+  );
 };
 
 export default App;
