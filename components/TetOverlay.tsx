@@ -84,15 +84,15 @@ const TetCountdownOverlay: React.FC<{ onSkip?: () => void }> = ({ onSkip }) => {
     if (!isVisible) return null;
 
     return (
-        <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-gradient-to-b from-red-950 via-red-900 to-black">
+        <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-gradient-to-b from-red-950/80 via-red-900/80 to-black/80 backdrop-blur-sm pointer-events-none">
             {isPast ? (
-                // ĐÃ GIAO THỪA
-                <div className="text-center animate-[popIn_0.5s_ease-out] px-4">
+                // ĐÃ GIAO THỪA - Hiển thị text không che scene
+                <div className="text-center animate-[popIn_0.5s_ease-out] px-4 pointer-events-auto">
                     <div className="text-5xl md:text-7xl mb-4">🎆🧧🎆</div>
-                    <h1 className="font-vibes text-3xl md:text-5xl text-amber-400 mb-4">
+                    <h1 className="font-vibes text-3xl md:text-5xl text-amber-400 mb-4 drop-shadow-2xl">
                         CHÚC MỪNG NĂM MỚI 2026!
                     </h1>
-                    <p className="text-lg md:text-xl text-amber-100 mb-6">
+                    <p className="text-lg md:text-xl text-amber-100 mb-6 drop-shadow-lg">
                         ❤️ Chúc TRÂN năm mới hạnh phúc! ❤️
                     </p>
                     {onSkip && (
@@ -634,8 +634,8 @@ const TetOverlay: React.FC<TetOverlayProps> = ({
                 </div>
             )}
 
-            {/* COUNTDOWN OVERLAY - Xuất hiện khi còn < 5 phút */}
-            <TetCountdownOverlay />
+            {/* COUNTDOWN OVERLAY - Ẩn để không che scene 3D */}
+            {false && <TetCountdownOverlay />}
         </>
     );
 };

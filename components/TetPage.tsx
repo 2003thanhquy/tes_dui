@@ -525,7 +525,8 @@ const TetPage: React.FC<TetPageProps> = ({ galleryImages: externalGalleryImages 
             )}
 
             {/* Main Content - Optimized for mobile */}
-            <div className={isLoading || showCountdown ? 'opacity-0 pointer-events-none' : 'opacity-100 transition-opacity duration-500'}>
+            {/* Main Content - Scene 3D luôn hiển thị, chỉ ẩn khi loading */}
+            <div className={isLoading ? 'opacity-0 pointer-events-none fixed inset-0 z-0' : 'opacity-100 transition-opacity duration-500 fixed inset-0 z-0'}>
                 <TetScene
                     isDesktop={isDesktop}
                     showFireworks={showFireworks}

@@ -268,7 +268,7 @@ const TetScene: React.FC<TetSceneProps> = ({
     const perfConfig = useMemo(() => getPerformanceConfig(), []);
 
     return (
-        <div className="w-full h-full absolute inset-0 z-0 bg-gradient-to-b from-[#450a0a] via-[#7f1d1d] to-[#991b1b]">
+        <div className="w-full h-full fixed inset-0 z-0 bg-gradient-to-b from-[#450a0a] via-[#7f1d1d] to-[#991b1b]">
             <Canvas
                 shadows={perfConfig.enableShadows}
                 camera={{ 
