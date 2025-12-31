@@ -2,12 +2,14 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 
 const WISHES = [
-  "An Khang Thịnh Vượng",
+  "Cung Chúc Tân Xuân",
   "Vạn Sự Như Ý",
   "Tấn Tài Tấn Lộc",
   "Sức Khỏe Dồi Dào",
-  "Tình Duyên Phơi Phới",
-  "Tiền Vô Như Nước"
+  "Sớm Có Người Yêu",
+  "Tiền Vào Như Nước",
+  "Công Việc Suôn Sẻ",
+  "Trẻ Mãi Không Già"
 ];
 
 const SimpleNewYearPage: React.FC = () => {
@@ -16,8 +18,45 @@ const SimpleNewYearPage: React.FC = () => {
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [hasInteracted, setHasInteracted] = useState(false);
+  const [isAudioReady, setIsAudioReady] = useState(false);
+
+  // ... (existing code)
+
+  const handleInteraction = async () => {
+    if (!isAudioReady) return; // Prevent early interaction
+    if (audioRef.current) {
+      // ...
+    }
+  };
+
+  if (!hasInteracted) {
+    return (
+      <div
+        onClick={handleInteraction}
+        className={`fixed inset-0 z-50 bg-red-950 flex flex-col items-center justify-center transition-colors duration-500 ${isAudioReady ? 'cursor-pointer hover:bg-red-900' : 'cursor-wait'}`}
+      >
+        <div className={`text-center ${isAudioReady ? 'animate-pulse' : 'opacity-50'}`}>
+          <div className="text-6xl mb-4">🎁</div>
+          <h1 className="text-3xl text-yellow-400 font-script mb-2">
+            {isAudioReady ? 'Bạn có một món quà!' : 'Đang chuẩn bị quà...'}
+          </h1>
+          <p className="text-white/80">
+            {isAudioReady ? 'Chạm để mở quà & bật nhạc 🎶' : 'Đang tải nhạc... vui lòng đợi ⏳'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ... (inside return)
+  <audio
+    ref={audioRef}
+    loop
+    preload="auto"
+    src="/happynewyear.mp3"
+    onCanPlay={() => setIsAudioReady(true)}
+    onError={(e) => console.error("Audio loading error:", e)}
+  />
 
   // Rotating content state
   const [currentWishIndex, setCurrentWishIndex] = useState(0);
@@ -33,21 +72,7 @@ const SimpleNewYearPage: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    // Auto-play music if possible
-    const playMusic = async () => {
-      if (audioRef.current) {
-        try {
-          await audioRef.current.play();
-          setIsPlaying(true);
-          setHasInteracted(true);
-        } catch (err) {
-          console.log("Auto-play prevented", err);
-        }
-      }
-    };
-    playMusic();
-  }, []);
+
 
   // Fireworks Animation Logic
   useEffect(() => {
@@ -150,12 +175,17 @@ const SimpleNewYearPage: React.FC = () => {
   }, []);
 
   const handleInteraction = async () => {
+    if (!isAudioReady) return;
+
     if (audioRef.current) {
       try {
+        audioRef.current.volume = 1.0;
         await audioRef.current.play();
         setIsPlaying(true);
         setHasInteracted(true);
       } catch (err) {
+        console.error("Playback failed:", err);
+        // Fallback: simply allow entry even if music fails
         setHasInteracted(true);
       }
     } else {
@@ -181,12 +211,16 @@ const SimpleNewYearPage: React.FC = () => {
     return (
       <div
         onClick={handleInteraction}
-        className="fixed inset-0 z-50 bg-red-950 flex flex-col items-center justify-center cursor-pointer"
+        className={`fixed inset-0 z-50 bg-red-950 flex flex-col items-center justify-center transition-colors duration-500 ${isAudioReady ? 'cursor-pointer hover:bg-red-900' : 'cursor-wait'}`}
       >
-        <div className="text-center animate-pulse">
+        <div className={`text-center ${isAudioReady ? 'animate-pulse' : 'opacity-50'}`}>
           <div className="text-6xl mb-4">🎁</div>
-          <h1 className="text-3xl text-yellow-400 font-script mb-2">Bạn có một món quà!</h1>
-          <p className="text-white/80">Chạm vào màn hình để mở</p>
+          <h1 className="text-3xl text-yellow-400 font-script mb-2">
+            {isAudioReady ? 'Bạn có một món quà!' : 'Đang chuẩn bị quà...'}
+          </h1>
+          <p className="text-white/80">
+            {isAudioReady ? 'Chạm để mở quà & bật nhạc 🎶' : 'Đang tải nhạc... vui lòng đợi ⏳'}
+          </p>
         </div>
       </div>
     );
@@ -206,13 +240,13 @@ const SimpleNewYearPage: React.FC = () => {
         className="z-10 relative perspective-1000"
       >
         <div
-          className="text-center p-10 bg-black/40 backdrop-blur-md rounded-3xl border-2 border-yellow-500/50 shadow-[0_0_100px_rgba(234,179,8,0.6)] transition-transform duration-100 ease-out"
+          className="text-center p-6 bg-black/40 backdrop-blur-md rounded-3xl border-2 border-yellow-500/50 shadow-[0_0_100px_rgba(234,179,8,0.6)] transition-transform duration-100 ease-out"
           style={{
             transform: `rotateX(${-tilt.y}deg) rotateY(${tilt.x}deg)`,
             transformStyle: 'preserve-3d'
           }}
         >
-          <h1 className="font-script text-5xl md:text-7xl mb-6 animate-float-up transform translate-z-10">
+          <h1 className="font-script text-5xl md:text-7xl mb-2 animate-float-up transform translate-z-10">
             <span className="block text-yellow-300 drop-shadow-[0_0_10px_rgba(253,224,71,0.8)] animate-pulse-slow">
               Chúc Mừng Năm Mới
             </span>
@@ -222,9 +256,15 @@ const SimpleNewYearPage: React.FC = () => {
             </span>
           </h1>
 
-          <p className="font-script text-3xl md:text-5xl text-pink-300 mt-8 neon-text animate-bounce-slow">
+          <p className="font-script text-3xl md:text-5xl text-pink-300 mt-4 neon-text animate-bounce-slow">
             {displayName} ❤️
           </p>
+
+          <div className="h-24 flex items-center justify-center mt-6">
+            <p key={currentWishIndex} className="font-script text-2xl md:text-4xl text-yellow-200 animate-fade-in-up transition-all duration-500">
+              ✨ {WISHES[currentWishIndex]} ✨
+            </p>
+          </div>
 
 
         </div>
@@ -262,7 +302,14 @@ const SimpleNewYearPage: React.FC = () => {
         </div>
       ))}
 
-      <audio ref={audioRef} loop preload="auto" src="/happynewyear.mp3" />
+      <audio
+        ref={audioRef}
+        loop
+        preload="auto"
+        src="/happynewyear.mp3"
+        onCanPlay={() => setIsAudioReady(true)}
+        onError={(e) => console.error("Audio loading error:", e)}
+      />
 
       <style>{`
         @keyframes fall {
