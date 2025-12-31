@@ -295,6 +295,184 @@
               opacity: 0;
           }
       }
+      
+      /* ========== TET THEME ANIMATIONS ========== */
+      
+      /* Improved popIn for modals - works without translate */
+      @keyframes popIn {
+          0% { 
+              opacity: 0; 
+              transform: scale(0.3);
+          }
+          70% { 
+              transform: scale(1.05);
+          }
+          100% { 
+              opacity: 1; 
+              transform: scale(1);
+          }
+      }
+      
+      /* Envelope open animation */
+      @keyframes envelopeOpen {
+          0% { 
+              transform: rotateX(0deg);
+          }
+          100% { 
+              transform: rotateX(-180deg);
+          }
+      }
+      
+      /* Lantern glow effect */
+      @keyframes lanternGlow {
+          0%, 100% { 
+              filter: brightness(1) drop-shadow(0 0 10px rgba(220, 38, 38, 0.5));
+          }
+          50% { 
+              filter: brightness(1.3) drop-shadow(0 0 20px rgba(251, 191, 36, 0.8));
+          }
+      }
+      
+      /* Petal fall animation */
+      @keyframes petalFall {
+          0% { 
+              transform: translateY(-10vh) rotate(0deg); 
+              opacity: 1; 
+          }
+          100% { 
+              transform: translateY(110vh) rotate(360deg); 
+              opacity: 0.3; 
+          }
+      }
+      
+      /* Lucky envelope shake */
+      @keyframes envelopeShake {
+          0%, 100% { transform: rotate(0deg); }
+          10%, 30%, 50%, 70%, 90% { transform: rotate(-3deg); }
+          20%, 40%, 60%, 80% { transform: rotate(3deg); }
+      }
+      
+      /* Gold shimmer for Tet */
+      @keyframes goldShimmer {
+          0% { background-position: -200% center; }
+          100% { background-position: 200% center; }
+      }
+      
+      .animate-gold-shimmer {
+          background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 25%, #fff 50%, #f59e0b 75%, #fbbf24 100%);
+          background-size: 200% auto;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          animation: goldShimmer 3s linear infinite;
+      }
+      
+      /* ========== MOBILE OPTIMIZATIONS ========== */
+      
+      /* Touch-friendly targets (44px minimum) */
+      @media (max-width: 768px) {
+          button, 
+          [role="button"], 
+          .touch-target {
+              min-height: 44px;
+              min-width: 44px;
+          }
+          
+          /* Reduce animations on mobile for performance */
+          .reduce-motion {
+              animation-duration: 0.5s !important;
+          }
+          
+          /* Larger touch targets for navigation */
+          nav button {
+              padding: 12px 16px;
+          }
+          
+          /* Full-width panels on mobile */
+          .mobile-full-width {
+              width: 100% !important;
+              max-width: 100% !important;
+          }
+          
+          /* Adjust font sizes for mobile */
+          .font-vibes {
+              font-size: clamp(1rem, 4vw, 2rem);
+          }
+          
+          /* Ensure modals fit mobile screens */
+          .modal-mobile {
+              max-height: 90vh;
+              overflow-y: auto;
+              margin: 1rem;
+          }
+          
+          /* Better spacing on mobile */
+          .mobile-spacing {
+              padding: 0.75rem;
+          }
+      }
+      
+      /* Small mobile devices */
+      @media (max-width: 375px) {
+          .font-vibes {
+              font-size: clamp(0.875rem, 3.5vw, 1.5rem);
+          }
+          
+          /* Even more compact on very small screens */
+          .compact-mobile {
+              padding: 0.5rem;
+              gap: 0.25rem;
+          }
+      }
+      
+      /* Landscape mobile */
+      @media (max-height: 500px) and (orientation: landscape) {
+          .landscape-compact {
+              max-height: 80vh;
+              overflow-y: auto;
+          }
+          
+          /* Hide non-essential elements in landscape */
+          .hide-landscape {
+              display: none !important;
+          }
+      }
+      
+      /* Safe area for notched phones */
+      @supports (padding-top: env(safe-area-inset-top)) {
+          .safe-area-top {
+              padding-top: env(safe-area-inset-top);
+          }
+          .safe-area-bottom {
+              padding-bottom: env(safe-area-inset-bottom);
+          }
+      }
+      
+      /* Prevent text selection on interactive elements */
+      .no-select {
+          -webkit-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+          user-select: none;
+          -webkit-touch-callout: none;
+      }
+      
+      /* Smooth scrolling for panels */
+      .smooth-scroll {
+          -webkit-overflow-scrolling: touch;
+          scroll-behavior: smooth;
+      }
+      
+      /* Prevent iOS zoom on input focus */
+      @media (max-width: 768px) {
+          input, select, textarea {
+              font-size: 16px !important;
+          }
+      }
+      
+      /* Navigation bar mobile optimization */
+      .nav-mobile {
+          bottom: env(safe-area-inset-bottom, 16px);
+      }
     </style>
   <script type="importmap">
 {
