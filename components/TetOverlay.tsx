@@ -43,11 +43,11 @@ const TypewriterText: React.FC<{ text: string }> = ({ text }) => {
     return <span className="drop-shadow-md">{displayedText}</span>;
 };
 
-// Countdown - Chỉ hiện khi còn < 5 phút hoặc đã qua giao thừa
-const TetCountdown: React.FC = () => {
+// Countdown Screen - Hiện trước khi vào nội dung chính
+const TetCountdownOverlay: React.FC<{ onSkip?: () => void }> = ({ onSkip }) => {
     const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
     const [isPast, setIsPast] = useState(false);
-    const [isVisible, setIsVisible] = useState(false); // Ẩn ban đầu
+    const [isVisible, setIsVisible] = useState(false); // Restore visibility state
 
     useEffect(() => {
         const tetDate = new Date('2026-01-01T00:00:00+07:00');
@@ -58,12 +58,12 @@ const TetCountdown: React.FC = () => {
 
             if (diff <= 0) {
                 setIsPast(true);
-                setIsVisible(true); // Hiện khi đã qua
+                setIsVisible(true);
                 setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
                 return;
             }
 
-            // Chỉ hiện countdown khi còn < 5 phút (300000ms)
+            // Chỉ hiện khi còn < 5 phút để đếm ngược về đích
             const FIVE_MINUTES = 5 * 60 * 1000;
             setIsVisible(diff <= FIVE_MINUTES);
 
@@ -80,45 +80,65 @@ const TetCountdown: React.FC = () => {
         return () => clearInterval(interval);
     }, []);
 
-    // Ẩn nếu chưa đến lúc hiện
-    if (!isVisible) {
-        return null;
-    }
+    if (!isVisible) return null;
 
-    if (isPast) {
-        return (
-            <div className="text-center animate-pulse">
-                <div className="bg-gradient-to-r from-red-600 to-amber-600 px-8 py-4 rounded-2xl shadow-[0_0_40px_rgba(251,191,36,0.6)]">
-                    <div className="font-vibes text-3xl md:text-5xl text-white drop-shadow-lg">
-                        🎊 CHÚC MỪNG NĂM MỚI 2026! 🎊
-                    </div>
-                    <div className="text-amber-200 mt-2 text-lg">Chúc TRÂN năm mới hạnh phúc!</div>
-                </div>
-            </div>
-        );
-    }
-
-    // Hiển thị countdown lớn khi còn < 5 phút
     return (
-        <div className="text-center animate-[popIn_0.5s_ease-out]">
-            <div className="bg-gradient-to-b from-red-900/90 to-red-800/90 backdrop-blur-md px-6 py-4 rounded-2xl shadow-[0_0_30px_rgba(220,38,38,0.5)] border-2 border-amber-400/50">
-                <div className="font-vibes text-lg md:text-2xl text-amber-200 mb-3">🎆 ĐẾM NGƯỢC GIAO THỪA 🎆</div>
-                <div className="flex justify-center gap-3 md:gap-6">
-                    {[
-                        { value: timeLeft.minutes, label: 'Phút' },
-                        { value: timeLeft.seconds, label: 'Giây' }
-                    ].map((item, i) => (
-                        <div key={i} className="flex flex-col items-center">
-                            <div className="w-16 h-16 md:w-24 md:h-24 bg-gradient-to-br from-amber-500 to-red-600 rounded-xl flex items-center justify-center border-4 border-white/30 shadow-lg">
-                                <span className="font-bold text-3xl md:text-5xl text-white" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                                    {String(item.value).padStart(2, '0')}
-                                </span>
-                            </div>
-                            <span className="text-sm md:text-base text-amber-200 mt-2 font-bold">{item.label}</span>
-                        </div>
-                    ))}
+        <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-gradient-to-b from-red-950 via-red-900 to-black">
+            {isPast ? (
+                // ĐÃ GIAO THỪA
+                <div className="text-center animate-[popIn_0.5s_ease-out] px-4">
+                    <div className="text-5xl md:text-7xl mb-4">🎆🧧🎆</div>
+                    <h1 className="font-vibes text-3xl md:text-5xl text-amber-400 mb-4">
+                        CHÚC MỪNG NĂM MỚI 2026!
+                    </h1>
+                    <p className="text-lg md:text-xl text-amber-100 mb-6">
+                        ❤️ Chúc TRÂN năm mới hạnh phúc! ❤️
+                    </p>
+                    {onSkip && (
+                        <button onClick={onSkip} className="bg-amber-500 hover:bg-amber-400 text-red-900 font-bold px-6 py-3 rounded-full text-lg">
+                            Xem nội dung →
+                        </button>
+                    )}
                 </div>
-            </div>
+            ) : (
+                // COUNTDOWN
+                <div className="text-center px-4">
+                    <div className="text-4xl md:text-5xl mb-4">🧧</div>
+                    <h1 className="font-vibes text-2xl md:text-3xl text-amber-400 mb-2">
+                        Gửi TRÂN Yêu Thương
+                    </h1>
+                    <p className="text-amber-200/80 text-sm md:text-base mb-6">Đếm ngược đến Giao thừa 2026</p>
+
+                    {/* Countdown boxes */}
+                    <div className="flex justify-center gap-2 md:gap-4 mb-8">
+                        {[
+                            { value: timeLeft.days, label: 'Ngày' },
+                            { value: timeLeft.hours, label: 'Giờ' },
+                            { value: timeLeft.minutes, label: 'Phút' },
+                            { value: timeLeft.seconds, label: 'Giây' }
+                        ].map((item, i) => (
+                            <div key={i} className="flex flex-col items-center">
+                                <div className="w-14 h-14 md:w-20 md:h-20 bg-gradient-to-br from-red-600 to-red-800 rounded-lg md:rounded-xl flex items-center justify-center border-2 border-amber-400/50 shadow-lg">
+                                    <span className="font-bold text-xl md:text-3xl text-white" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                                        {String(item.value).padStart(2, '0')}
+                                    </span>
+                                </div>
+                                <span className="text-[10px] md:text-xs text-amber-200 mt-1">{item.label}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Skip button */}
+                    {onSkip && (
+                        <button
+                            onClick={onSkip}
+                            className="bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-bold px-6 py-3 rounded-full text-sm md:text-base shadow-lg transition-all hover:scale-105"
+                        >
+                            Xem nội dung ngay →
+                        </button>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
@@ -236,28 +256,28 @@ const InteractiveLuckyCards: React.FC<{ onReveal: (msg: string) => void }> = ({ 
 
     return (
         <div className="relative">
-            <div className="flex gap-3 justify-center">
+            <div className="flex gap-2 md:gap-3 justify-center">
                 {LUCKY_CARD_MESSAGES.map((card, i) => (
                     <div
                         key={i}
                         onClick={() => handleClick(i)}
-                        className={`cursor-pointer transition-all duration-300 ${revealed.has(i) ? 'scale-90 opacity-50' : 'hover:scale-110'}`}
+                        className={`cursor-pointer transition-all duration-300 ${revealed.has(i) ? 'scale-90 opacity-50' : 'hover:scale-110 active:scale-95'}`}
                     >
-                        <div className={`w-14 h-18 md:w-16 md:h-20 rounded-xl bg-gradient-to-br ${card.color} 
-                            shadow-lg border-2 border-white/30 flex flex-col items-center justify-center`}>
-                            <span className="text-2xl md:text-3xl">{card.icon}</span>
-                            {!revealed.has(i) && <span className="text-[9px] text-white/90 mt-1">Nhấn</span>}
-                            {revealed.has(i) && <span className="text-white text-lg">✓</span>}
+                        <div className={`w-12 h-14 md:w-14 md:h-18 rounded-lg bg-gradient-to-br ${card.color} 
+                            shadow-lg border border-white/30 flex flex-col items-center justify-center`}>
+                            <span className="text-xl md:text-2xl">{card.icon}</span>
+                            {!revealed.has(i) && <span className="text-[7px] md:text-[9px] text-white/80 mt-0.5">Nhấn</span>}
+                            {revealed.has(i) && <span className="text-white text-sm">✓</span>}
                         </div>
                     </div>
                 ))}
             </div>
 
             {popup && (
-                <div className="absolute -top-14 left-1/2 -translate-x-1/2 z-50 animate-[popIn_0.3s_ease-out]">
-                    <div className="bg-white px-5 py-3 rounded-xl shadow-2xl border-2 border-amber-400">
-                        <div className="font-bold text-red-600 text-sm text-center">{popup.title}</div>
-                        <div className="text-red-700 text-xs text-center mt-1">{popup.message}</div>
+                <div className="absolute -top-12 md:-top-14 left-1/2 -translate-x-1/2 z-50 animate-[popIn_0.3s_ease-out]">
+                    <div className="bg-white px-3 py-2 md:px-4 md:py-2 rounded-lg shadow-xl border-2 border-amber-400 min-w-[140px]">
+                        <div className="font-bold text-red-600 text-xs md:text-sm text-center">{popup.title}</div>
+                        <div className="text-red-700 text-[10px] md:text-xs text-center mt-0.5">{popup.message}</div>
                     </div>
                 </div>
             )}
@@ -363,38 +383,29 @@ const TetOverlay: React.FC<TetOverlayProps> = ({
                     </div>
                 ))}
 
-                {/* ===== HEADER - Wordmark Style ===== */}
-                <header className="absolute top-4 md:top-6 left-1/2 transform -translate-x-1/2 z-20 pointer-events-auto w-full max-w-lg px-4">
-                    {/* Main Title - Logo/Wordmark Style */}
-                    <div className="relative bg-gradient-to-b from-black/30 to-transparent backdrop-blur-sm rounded-2xl py-3 px-6">
+                {/* ===== HEADER - Compact for mobile ===== */}
+                <header className="absolute top-2 md:top-4 left-1/2 transform -translate-x-1/2 z-20 pointer-events-auto w-full max-w-sm md:max-w-lg px-3">
+                    <div className="relative bg-black/40 backdrop-blur-sm rounded-xl py-2 px-4 md:py-3 md:px-6">
                         <h1
-                            className="text-2xl sm:text-3xl md:text-4xl font-vibes text-center"
+                            className="text-lg sm:text-xl md:text-3xl font-vibes text-center"
                             style={{
                                 color: '#fbbf24',
-                                textShadow: '0 0 20px rgba(251,191,36,0.6), 0 0 40px rgba(251,191,36,0.3), 2px 2px 4px rgba(0,0,0,0.5)',
-                                letterSpacing: '0.05em'
+                                textShadow: '0 0 15px rgba(251,191,36,0.5), 1px 1px 2px rgba(0,0,0,0.5)'
                             }}
                         >
                             Gửi TRÂN Yêu Thương
                         </h1>
-
-                        {/* Sub-line - Value/Benefit */}
-                        <p className="text-center mt-2 text-xs md:text-sm text-amber-100/90" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                            ✨ Trải nghiệm Tết 2026 tương tác dành riêng cho em ✨
+                        <p className="text-center mt-1 text-[10px] md:text-xs text-amber-100/80" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                            ✨ Tết 2026 dành riêng cho em ✨
                         </p>
                     </div>
                 </header>
 
-                {/* ===== COUNTDOWN - Clean Position ===== */}
-                <div className="absolute top-28 md:top-32 left-1/2 transform -translate-x-1/2 z-20 pointer-events-auto">
-                    <TetCountdown />
-                </div>
-
-                {/* ===== CTA AREA - Interactive Cards ===== */}
-                <div className="absolute top-48 md:top-56 left-1/2 transform -translate-x-1/2 z-20 pointer-events-auto">
-                    <div className="text-center mb-2">
-                        <span className="text-amber-200/80 text-xs bg-black/30 px-3 py-1 rounded-full">
-                            🎁 Nhấn thẻ bên dưới để nhận quà
+                {/* ===== CTA - Interactive Cards (moved up for mobile) ===== */}
+                <div className="absolute top-20 md:top-28 left-1/2 transform -translate-x-1/2 z-20 pointer-events-auto">
+                    <div className="text-center mb-1">
+                        <span className="text-amber-200/80 text-[10px] md:text-xs bg-black/40 px-2 py-0.5 rounded-full">
+                            🎁 Nhấn thẻ để nhận quà
                         </span>
                     </div>
                     <InteractiveLuckyCards onReveal={(msg) => console.log('Revealed:', msg)} />
@@ -600,6 +611,9 @@ const TetOverlay: React.FC<TetOverlayProps> = ({
                     </div>
                 </div>
             )}
+
+            {/* COUNTDOWN OVERLAY - Xuất hiện khi còn < 5 phút */}
+            <TetCountdownOverlay />
         </>
     );
 };

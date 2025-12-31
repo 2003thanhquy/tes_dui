@@ -256,7 +256,7 @@ const TetScene: React.FC<TetSceneProps> = ({
         <div className="w-full h-full absolute inset-0 z-0 bg-gradient-to-b from-[#1a0505] via-[#2d0a0a] to-[#3d1010]">
             <Canvas
                 shadows={perfConfig.enableShadows}
-                camera={{ position: [0, 0, 12], fov: isDesktop ? 50 : 55 }}
+                camera={{ position: isDesktop ? [0, 0, 12] : [0, 0, 16], fov: isDesktop ? 50 : 65 }} // Mobile: xa hơn, góc rộng hơn
                 dpr={perfConfig.pixelRatio}
                 frameloop="always"
                 performance={{ min: 0.75 }}
@@ -279,42 +279,50 @@ const TetScene: React.FC<TetSceneProps> = ({
                     {perfConfig.enableAurora && <Aurora intensity={0.6} />}
 
                     {/* Floating Lanterns */}
-                    <LanternFloat count={6} onLanternClick={onLanternClick} />
+                    <LanternFloat count={isDesktop ? 6 : 4} onLanternClick={onLanternClick} />
 
-                    {/* Lucky Envelopes (Lì xì) */}
-                    <LuckyEnvelope
-                        position={isDesktop ? [-3, -0.5, 2] : [-2, -1, 1.5]}
-                        onOpen={() => onLanternClick?.("Chúc mừng năm mới! 🧧💰")}
-                    />
+                    {/* Lucky Envelopes (Lì xì) - Scaled down for mobile */}
+                    <group scale={isDesktop ? 1 : 0.7}>
+                        <LuckyEnvelope
+                            position={isDesktop ? [-3, -0.5, 2] : [-2.5, -2, 1]}
+                            onOpen={() => onLanternClick?.("Chúc mừng năm mới! 🧧💰")}
+                        />
+                    </group>
 
-                    {/* Bánh chưng decorations */}
-                    <BanhChung position={isDesktop ? [3, -1, 1.5] : [2, -1.5, 1]} />
-                    <BanhChung position={isDesktop ? [-4, -1.2, 0.5] : [-3, -1.5, 0.5]} />
+                    {/* Bánh chưng decorations - Adjusted for mobile */}
+                    <group scale={isDesktop ? 1 : 0.8}>
+                        <BanhChung position={isDesktop ? [3, -1, 1.5] : [2.5, -2.5, 1]} />
+                        <BanhChung position={isDesktop ? [-4, -1.2, 0.5] : [-3.5, -3, 0]} />
+                    </group>
 
-                    {/* TRÂN - Special text effect - positioned higher and forward */}
-                    <TranText3D position={isDesktop ? [0, 3.5, 3] : [0, 2.5, 2]} />
+                    {/* TRÂN - Special text effect - Mobile: Higher to avoid overlap */}
+                    <group scale={isDesktop ? 1 : 0.8}>
+                        <TranText3D position={isDesktop ? [0, 3.5, 3] : [0, 4, 1]} />
+                    </group>
 
                     {/* Heart Photo Frame */}
                     {heartPhotoUrl && (
-                        <HeartPhotoFrame
-                            position={isDesktop ? [3, 1.5, -2] : [2.5, 1, -1.5]}
-                            imageUrl={heartPhotoUrl}
-                            onPhotoClick={onHeartPhotoClick}
-                            currentIndex={currentHeartPhotoIndex}
-                            totalImages={5}
-                        />
+                        <group scale={isDesktop ? 1 : 0.8}>
+                            <HeartPhotoFrame
+                                position={isDesktop ? [3, 1.5, -2] : [2.5, 2.5, -2]}
+                                imageUrl={heartPhotoUrl}
+                                onPhotoClick={onHeartPhotoClick}
+                                currentIndex={currentHeartPhotoIndex}
+                                totalImages={5}
+                            />
+                        </group>
                     )}
 
-                    {/* Photo Carousel */}
+                    {/* Photo Carousel - Mobile: Smaller radius, pushed back */}
                     {carouselImages.length > 0 && onCarouselPhotoClick && (
                         <PhotoCarousel
                             images={perfConfig.carouselImages > 0 ? carouselImages.slice(0, perfConfig.carouselImages) : carouselImages}
                             onPhotoClick={onCarouselPhotoClick}
-                            radius={carouselRadius}
+                            radius={isDesktop ? carouselRadius : 3.5} // Mobile radius smaller
                             height={isDesktop ? 2 : 1.2}
                             speed={0.3}
                             enableRotation={true}
-                            position={isDesktop ? [0, 2, -3] : [0, 1.5, -2.5]}
+                            position={isDesktop ? [0, 2, -3] : [0, 1, -4]} // Pushed back on mobile
                             enableFloating={true}
                         />
                     )}

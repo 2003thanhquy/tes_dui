@@ -34,54 +34,130 @@ const RANDOM_SURPRISE_MESSAGES = [
     "❤️ Mãi bên TRÂN!",
 ];
 
+// SIMULATION MODE: Set to false for production
+const IS_SIMULATION_MODE = true;
+
+// Countdown Display Component
+const CountdownDisplay: React.FC<{ onFinish?: () => void }> = ({ onFinish }) => {
+    const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+    const targetDateRef = useRef<Date>(new Date('2026-01-01T00:00:00+07:00'));
+
+    useEffect(() => {
+        // In simulation mode, set target to 20 seconds from now (first render)
+        if (IS_SIMULATION_MODE) {
+            const now = new Date();
+            targetDateRef.current = new Date(now.getTime() + 25000); // 25 seconds for testing
+        }
+    }, []);
+
+    useEffect(() => {
+        const updateCountdown = () => {
+            const now = new Date();
+            const diff = targetDateRef.current.getTime() - now.getTime();
+
+            if (diff <= 0) {
+                setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+                if (onFinish) onFinish();
+                return;
+            }
+
+            setTimeLeft({
+                days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+                hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+                minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+                seconds: Math.floor((diff % (1000 * 60)) / 1000)
+            });
+        };
+
+        updateCountdown();
+        const interval = setInterval(updateCountdown, 1000);
+        return () => clearInterval(interval);
+    }, [onFinish]); // Depend on onFinish for stable reference
+
+    return (
+        <div className="flex justify-center gap-2 md:gap-4 mb-8">
+            {[
+                { value: timeLeft.days, label: 'Ngày' },
+                { value: timeLeft.hours, label: 'Giờ' },
+                { value: timeLeft.minutes, label: 'Phút' },
+                { value: timeLeft.seconds, label: 'Giây' }
+            ].map((item, i) => (
+                <div key={i} className="flex flex-col items-center">
+                    <div className="w-14 h-14 md:w-20 md:h-20 bg-gradient-to-br from-red-600 to-red-800 rounded-lg md:rounded-xl flex items-center justify-center border-2 border-amber-400/50 shadow-lg animate-[pulse_1s_infinite]">
+                        <span className="font-bold text-xl md:text-3xl text-white" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                            {String(item.value).padStart(2, '0')}
+                        </span>
+                    </div>
+                    <span className="text-[10px] md:text-xs text-amber-200 mt-1">{item.label}</span>
+                </div>
+            ))}
+        </div>
+    );
+};
+
 const TetPage: React.FC<TetPageProps> = ({ galleryImages: externalGalleryImages }) => {
     // Loading state
     const [isLoading, setIsLoading] = useState(true);
     const [loadingProgress, setLoadingProgress] = useState(0);
 
+    // Flow: Countdown (Default) -> Main Content
+    // Logic: 
+    // 1. Show Countdown immediately.
+    // 2. Click ANYWHERE to start Music.
+    // 3. Auto-enter party when countdown finishes (Simulation Mode) OR user clicks "Vào Tiệc".
+    const [showCountdown, setShowCountdown] = useState(true);
+
+    // ... (rest of states)
     // Gallery images
     const [galleryImages, setGalleryImages] = useState<GalleryImage[]>(externalGalleryImages || []);
     const [selectedGalleryImage, setSelectedGalleryImage] = useState<GalleryImage | null>(null);
     const [currentHeartPhotoIndex, setCurrentHeartPhotoIndex] = useState(0);
-
-    // Wish state
-    const [wishState, setWishState] = useState<WishState>({
-        text: "",
-        loading: false,
-        error: null,
-    });
-
-    // Music state
-    const [musicState, setMusicState] = useState<MusicState>({
-        playing: false,
-        volume: 0.5
-    });
+    const [wishState, setWishState] = useState<WishState>({ text: "", loading: false, error: null });
+    const [musicState, setMusicState] = useState<MusicState>({ playing: false, volume: 0.5 });
     const audioRef = useRef<HTMLAudioElement>(new Audio(TET_AUDIO_URL));
     const hasInteractedRef = useRef(false);
-
-    // Visual effects
+    // ... Visual effects states ...
     const [clickEffects, setClickEffects] = useState<ClickEffect[]>([]);
     const effectIdRef = useRef(0);
     const [windDirection, setWindDirection] = useState<[number, number]>([0, 0]);
     const [showFireworks, setShowFireworks] = useState(false);
-
-    // Lantern message
     const [lanternMessage, setLanternMessage] = useState<string | null>(null);
-
-    // Envelope state
     const [showEnvelope, setShowEnvelope] = useState(true);
     const [envelopeMessage] = useState<string>(
         TET_LOVE_MESSAGES[Math.floor(Math.random() * TET_LOVE_MESSAGES.length)]
     );
-
-    // Layout
     const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
     const [carouselRadius, setCarouselRadius] = useState(4.5);
-
-    // Time-based surprise effects
     const [surpriseMessage, setSurpriseMessage] = useState<string | null>(null);
     const [showConfetti, setShowConfetti] = useState(false);
     const [autoFireworksCount, setAutoFireworksCount] = useState(0);
+
+    // ... (useEffect logic remains same, mostly) ...
+
+    // Enter Party -> Hide Countdown + Unlock Audio
+    const handleEnterParty = useCallback(() => {
+        if (!showCountdown) return; // Prevent double trigger
+        setShowCountdown(false);
+        // Autoplay music
+        const audio = audioRef.current;
+        audio.play().then(() => {
+            setMusicState(prev => ({ ...prev, playing: true }));
+        }).catch(e => console.warn("Audio play failed:", e));
+        // Trigger celebration effects
+        playSuccessSound();
+        setShowFireworks(true);
+        setTimeout(() => setShowFireworks(false), 8000);
+    }, [showCountdown]);
+
+    // Handle generic interaction on Countdown to play music without entering
+    const handleCountdownInteraction = () => {
+        if (!musicState.playing) {
+            const audio = audioRef.current;
+            audio.play().then(() => {
+                setMusicState(prev => ({ ...prev, playing: true }));
+            }).catch(e => console.warn("Audio play failed:", e));
+        }
+    };
 
     // Load gallery images
     useEffect(() => {
@@ -343,15 +419,53 @@ const TetPage: React.FC<TetPageProps> = ({ galleryImages: externalGalleryImages 
         setCarouselRadius(prev => Math.max(2.5, Math.min(7, prev + zoomDelta)));
     }, []);
 
+    // Note: handleEnterParty is already defined above in simulation block via useCallback
+
     return (
-        <div className="w-full h-screen relative bg-gradient-to-b from-[#1a0505] to-[#3d1010] overflow-hidden select-none font-sans cursor-crosshair">
+        <div className="w-full h-screen relative bg-gradient-to-b from-[#1a0505] to-[#3d1010] overflow-hidden select-none font-sans">
             {/* Loading Screen */}
             {isLoading && (
-                <LoadingScreen progress={loadingProgress} message="Đang chuẩn bị Tết 2026..." />
+                <LoadingScreen progress={loadingProgress} message="Đang chuẩn bị..." />
             )}
 
-            {/* Main Content */}
-            <div className={isLoading ? 'opacity-0 pointer-events-none' : 'opacity-100 transition-opacity duration-500'}>
+            {/* COUNTDOWN SCREEN (DEFAULT) - Shows immediately */}
+            {showCountdown && !isLoading && (
+                <div
+                    className="fixed inset-0 z-[300] flex flex-col items-center justify-center bg-gradient-to-b from-red-950 via-red-900 to-black cursor-pointer"
+                    onClick={handleCountdownInteraction} // Click anywhere to play music
+                >
+                    <div className="text-center px-4 animate-[fadeIn_0.5s_ease-out]">
+                        <div className="text-4xl md:text-5xl mb-4">🧧</div>
+                        <h1 className="font-vibes text-2xl md:text-3xl text-amber-400 mb-2">
+                            Gửi TRÂN Yêu Thương
+                        </h1>
+                        <p className="text-amber-200/80 text-sm md:text-base mb-6">
+                            {IS_SIMULATION_MODE ? "Chế độ Test: Vào tiệc sau 25s..." : "Đếm ngược đến Giao thừa 2026"}
+                        </p>
+
+                        {/* Live countdown */}
+                        <CountdownDisplay onFinish={IS_SIMULATION_MODE ? handleEnterParty : undefined} />
+
+                        {/* Enter Party button */}
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation(); // Avoid double trigger
+                                handleEnterParty();
+                            }}
+                            className="mt-8 bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-bold px-8 py-3 md:px-10 md:py-4 rounded-full text-base md:text-lg shadow-[0_0_20px_rgba(251,191,36,0.6)] transition-all hover:scale-105 active:scale-95 animate-bounce"
+                        >
+                            Vào Tiệc Ngay 🎉
+                        </button>
+
+                        {!musicState.playing && (
+                            <p className="mt-4 text-xs text-amber-200/50 animate-pulse">(Chạm vào màn hình để bật nhạc)</p>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Main Content - Optimized for mobile */}
+            <div className={isLoading || showCountdown ? 'opacity-0 pointer-events-none' : 'opacity-100 transition-opacity duration-500'}>
                 <TetScene
                     isDesktop={isDesktop}
                     showFireworks={showFireworks}
