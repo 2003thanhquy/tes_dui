@@ -17,6 +17,7 @@ interface TetOverlayProps {
     onCloseLanternMessage: () => void;
     showEnvelope: boolean;
     onOpenEnvelope: () => void;
+    onCloseEnvelope: () => void;
     envelopeMessage: string;
     // New time-based effects
     surpriseMessage?: string | null;
@@ -147,8 +148,17 @@ const TetCountdownOverlay: React.FC<{ onSkip?: () => void }> = ({ onSkip }) => {
 const LoveEnvelope: React.FC<{
     isOpen: boolean;
     onOpen: () => void;
+    onClose: () => void;
     message: string;
-}> = ({ isOpen, onOpen, message }) => {
+}> = ({ isOpen, onOpen, onClose, message }) => {
+    // Auto-close timer
+    useEffect(() => {
+        if (isOpen) {
+            const timer = setTimeout(onClose, 10000);
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen, onClose]);
+
     return (
         <div className="relative flex flex-col items-center">
             {!isOpen ? (
@@ -182,13 +192,23 @@ const LoveEnvelope: React.FC<{
                     </div>
 
                     {/* Hint text */}
-                    <div className="mt-4 text-amber-200 text-xs md:text-base font-vibes animate-bounce bg-black/30 px-2 rounded-full">
+                    <div className="mt-4 text-amber-200 text-xs md:text-base font-vibes animate-bounce bg-red-950/40 px-3 py-1 rounded-full border border-amber-500/20">
                         📩 Nhấn để mở thư tình
                     </div>
                 </div>
             ) : (
                 // Open envelope with message - Optimized for mobile
-                <div className="animate-[popIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)]">
+                <div className="relative animate-[popIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)]">
+                    {/* Close Button */}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onClose();
+                        }}
+                        className="absolute -top-3 -right-3 md:-top-4 md:-right-4 z-50 w-8 h-8 md:w-10 md:h-10 bg-red-600 hover:bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg border-2 border-amber-400 text-xl font-bold transition-transform hover:scale-110 active:scale-95"
+                    >
+                        ×
+                    </button>
                     {/* Confetti animation */}
                     <div className="absolute inset-0 pointer-events-none">
                         {[...Array(20)].map((_, i) => (
@@ -300,6 +320,7 @@ const TetOverlay: React.FC<TetOverlayProps> = ({
     onCloseLanternMessage,
     showEnvelope,
     onOpenEnvelope,
+    onCloseEnvelope,
     envelopeMessage,
     // New props
     surpriseMessage,
@@ -370,7 +391,7 @@ const TetOverlay: React.FC<TetOverlayProps> = ({
                 {clickEffects.map(effect => (
                     <div
                         key={effect.id}
-                        className="absolute pointer-events-none font-vibes text-3xl font-bold animate-float-up z-50"
+                        className="absolute pointer-events-none font-vibes text-xl md:text-3xl font-bold animate-float-up z-50"
                         style={{
                             left: effect.x,
                             top: effect.y,
@@ -384,8 +405,8 @@ const TetOverlay: React.FC<TetOverlayProps> = ({
                 ))}
 
                 {/* ===== HEADER - Compact for mobile ===== */}
-                <header className="absolute top-2 md:top-4 left-1/2 transform -translate-x-1/2 z-20 pointer-events-auto w-full max-w-sm md:max-w-lg px-3">
-                    <div className="relative bg-black/40 backdrop-blur-sm rounded-xl py-2 px-4 md:py-3 md:px-6">
+                <header className="absolute top-1 md:top-4 left-1/2 transform -translate-x-1/2 z-20 pointer-events-auto w-full max-w-[90%] md:max-w-lg px-2">
+                    <div className="relative bg-red-950/40 backdrop-blur-sm rounded-xl py-2 px-4 md:py-3 md:px-6 border border-amber-500/10">
                         <h1
                             className="text-lg sm:text-xl md:text-3xl font-vibes text-center"
                             style={{
@@ -402,9 +423,9 @@ const TetOverlay: React.FC<TetOverlayProps> = ({
                 </header>
 
                 {/* ===== CTA - Interactive Cards (moved up for mobile) ===== */}
-                <div className="absolute top-20 md:top-28 left-1/2 transform -translate-x-1/2 z-20 pointer-events-auto scale-90 md:scale-100 origin-top">
+                <div className="absolute top-16 md:top-28 left-1/2 transform -translate-x-1/2 z-20 pointer-events-auto scale-75 md:scale-100 origin-top">
                     <div className="text-center mb-1">
-                        <span className="text-amber-200/80 text-[10px] md:text-xs bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-sm">
+                        <span className="text-amber-200/80 text-[10px] md:text-xs bg-red-950/40 px-2 py-0.5 rounded-full backdrop-blur-sm border border-amber-500/10">
                             🎁 Nhấn thẻ để nhận quà
                         </span>
                     </div>
@@ -442,6 +463,7 @@ const TetOverlay: React.FC<TetOverlayProps> = ({
                         <LoveEnvelope
                             isOpen={envelopeOpen}
                             onOpen={handleEnvelopeOpen}
+                            onClose={onCloseEnvelope}
                             message={envelopeMessage}
                         />
                     </div>
@@ -463,7 +485,7 @@ const TetOverlay: React.FC<TetOverlayProps> = ({
                     {showPanel && (
                         <div
                             onClick={() => setShowPanel(false)}
-                            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-20 animate-[fadeIn_0.3s_ease-out]"
+                            className="fixed inset-0 bg-red-950/60 backdrop-blur-sm z-20 animate-[fadeIn_0.3s_ease-out]"
                         />
                     )}
 
@@ -505,7 +527,7 @@ const TetOverlay: React.FC<TetOverlayProps> = ({
                                             {wishState.loading ? '⏳ Đang tạo...' : '🧧 Tạo lời chúc'}
                                         </button>
                                     </div>
-                                    <div className="bg-black/30 rounded-lg p-3 md:p-4 min-h-[60px] md:min-h-[80px] flex items-center">
+                                    <div className="bg-red-900/20 rounded-lg p-3 md:p-4 min-h-[60px] md:min-h-[80px] flex items-center border border-amber-500/10">
                                         <p className="text-sm md:text-base text-white leading-relaxed">
                                             {wishState.text || (
                                                 <span className="text-gray-400 italic">
@@ -588,7 +610,7 @@ const TetOverlay: React.FC<TetOverlayProps> = ({
             {/* Gallery Lightbox */}
             {selectedGalleryImage && (
                 <div
-                    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-[fadeIn_0.3s_ease-out]"
+                    className="fixed inset-0 z-[200] flex items-center justify-center bg-red-950/80 backdrop-blur-md p-4 animate-[fadeIn_0.3s_ease-out]"
                     onClick={onCloseGalleryImage}
                 >
                     <div

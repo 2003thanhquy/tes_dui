@@ -157,7 +157,7 @@ const TranText3D: React.FC<{ position: [number, number, number]; isDesktop?: boo
                 {/* 3D Text TRÂN - Responsive */}
                 <Center>
                     <Text
-                        fontSize={isDesktop ? 2.5 : 1.8}
+                        fontSize={isDesktop ? 2.5 : 1.2}
                         color="#fbbf24"
                         anchorX="center"
                         anchorY="middle"
@@ -271,10 +271,13 @@ const TetScene: React.FC<TetSceneProps> = ({
         <div className="w-full h-full absolute inset-0 z-0 bg-gradient-to-b from-[#450a0a] via-[#7f1d1d] to-[#991b1b]">
             <Canvas
                 shadows={perfConfig.enableShadows}
-                camera={{ position: isDesktop ? [0, 0, 12] : [0, 0, 16], fov: isDesktop ? 50 : 65 }} // Mobile: xa hơn, góc rộng hơn
+                camera={{ 
+                    position: isDesktop ? [0, 0, 12] : [0, 2, 24], // Mobile: cao hơn và xa hơn để thấy toàn bộ scene
+                    fov: isDesktop ? 50 : 70 // Mobile: FOV lớn hơn để thấy rộng hơn
+                }}
                 dpr={perfConfig.pixelRatio}
                 frameloop="always"
-                performance={{ min: 0.75 }}
+                performance={{ min: perfConfig.performance || 0.5 }} // Adaptive performance based on device
             >
                 <color attach="background" args={['#450a0a']} />
                 <fog attach="fog" args={['#450a0a', 10, 40]} />
@@ -297,30 +300,30 @@ const TetScene: React.FC<TetSceneProps> = ({
                     <LanternFloat count={isDesktop ? 6 : 4} onLanternClick={onLanternClick} />
 
                     {/* Lucky Envelopes (Lì xì) - Scaled down for mobile */}
-                    <group scale={isDesktop ? 1 : 0.7}>
+                    <group scale={isDesktop ? 1 : 0.6}>
                         <LuckyEnvelope
-                            position={isDesktop ? [-3, -0.5, 2] : [-2.5, -2, 1]}
+                            position={isDesktop ? [-3, -0.5, 2] : [-1.5, -2.5, 1]}
                             onOpen={() => onLanternClick?.("Chúc mừng năm mới! 🧧💰")}
                         />
                     </group>
 
                     {/* Bánh chưng decorations - Adjusted for mobile */}
-                    <group scale={isDesktop ? 1 : 0.8}>
-                        <BanhChung position={isDesktop ? [3, -1, 1.5] : [2.5, -2.5, 1]} />
-                        <BanhChung position={isDesktop ? [-4, -1.2, 0.5] : [-3.5, -3, 0]} />
+                    <group scale={isDesktop ? 1 : 0.6}>
+                        <BanhChung position={isDesktop ? [3, -1, 1.5] : [1.5, -3, 1]} />
+                        <BanhChung position={isDesktop ? [-4, -1.2, 0.5] : [-2, -3.5, 0]} />
                     </group>
 
                     {/* TRÂN - Special text effect - Mobile: Higher to avoid overlap */}
-                    <group scale={isDesktop ? 1 : 0.8}>
+                    <group scale={isDesktop ? 1 : 0.6}>
                         <TranText3D
-                            position={isDesktop ? [0, 3.5, 3] : [0, 4, 1]}
+                            position={isDesktop ? [0, 3.5, 3] : [0, 2.5, 0]}
                             isDesktop={isDesktop}
                         />
                     </group>
 
                     {/* Heart Photo Frame */}
                     {heartPhotoUrl && (
-                        <group scale={isDesktop ? 1 : 0.8}>
+                        <group scale={isDesktop ? 1 : 0.6}>
                             <HeartPhotoFrame
                                 position={isDesktop ? [3, 1.5, -2] : [2.5, 2.5, -2]}
                                 imageUrl={heartPhotoUrl}
@@ -340,7 +343,7 @@ const TetScene: React.FC<TetSceneProps> = ({
                             height={isDesktop ? 2 : 1.2}
                             speed={0.3}
                             enableRotation={true}
-                            position={isDesktop ? [0, 2, -3] : [0, 1, -4]} // Pushed back on mobile
+                            position={isDesktop ? [0, 2, -3] : [0, -1, -5]} // Pushed back and lower on mobile
                             enableFloating={true}
                         />
                     )}
@@ -387,8 +390,8 @@ const TetScene: React.FC<TetSceneProps> = ({
                 <OrbitControls
                     enablePan={false}
                     enableZoom={true}
-                    minDistance={7}
-                    maxDistance={15}
+                    minDistance={isDesktop ? 5 : 15} // Mobile: cho phép zoom xa hơn để thấy toàn bộ
+                    maxDistance={isDesktop ? 40 : 50} // Mobile: cho phép zoom xa hơn nhiều
                     minPolarAngle={Math.PI / 3}
                     maxPolarAngle={Math.PI / 1.8}
                     autoRotate

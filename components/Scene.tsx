@@ -191,10 +191,13 @@ const Scene: React.FC<SceneProps> = ({
     <div className="w-full h-full absolute inset-0 z-0 bg-gradient-to-b from-[#0a0a1a] via-[#1a0a2e] to-[#2d1b4e]">
       <Canvas 
         shadows={perfConfig.enableShadows} 
-        camera={{ position: [0, 0, 12], fov: isDesktop ? 50 : 55 }}
+        camera={{ 
+          position: isDesktop ? [0, 0, 12] : [0, 2, 15], // Mobile: xa hơn và cao hơn để thấy toàn bộ scene
+          fov: isDesktop ? 50 : 65 // Mobile: FOV lớn hơn để thấy rộng hơn
+        }}
         dpr={perfConfig.pixelRatio}
         frameloop="always"
-        performance={{ min: 0.75 }} // Tăng từ 0.5 lên 0.75 để mượt hơn (target 45fps thay vì 30fps)
+        performance={{ min: perfConfig.performance || 0.5 }} // Adaptive performance based on device
       >
         <color attach="background" args={['#0a0a1a']} />
         <fog attach="fog" args={['#0a0a1a', 8, 25]} />
@@ -299,8 +302,8 @@ const Scene: React.FC<SceneProps> = ({
         <OrbitControls 
             enablePan={false} 
             enableZoom={true}
-            minDistance={7}
-            maxDistance={15}
+            minDistance={isDesktop ? 7 : 10} // Mobile: cho phép zoom xa hơn để thấy toàn bộ
+            maxDistance={isDesktop ? 15 : 25} // Mobile: cho phép zoom xa hơn nhiều
             minPolarAngle={Math.PI / 3} 
             maxPolarAngle={Math.PI / 1.8}
             autoRotate={cameraRotation[0] === 0 && cameraRotation[1] === 0} // Tắt auto rotate khi có gesture rotation

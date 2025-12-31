@@ -17,10 +17,10 @@ const CameraController: React.FC<CameraControllerProps> = ({ isDesktop }) => {
     
     const startPosition = isDesktop 
       ? new THREE.Vector3(0, 0, 12) // Far away, like closed card
-      : new THREE.Vector3(0, 0, 10);
+      : new THREE.Vector3(0, 2, 18); // Mobile: xa hơn và cao hơn để thấy toàn bộ scene ngay từ đầu
     const endPosition = isDesktop
       ? new THREE.Vector3(0, 2, 9) // Final position
-      : new THREE.Vector3(0, 1.5, 8);
+      : new THREE.Vector3(0, 2.5, 15); // Mobile: giữ vị trí xa để luôn thấy toàn bộ scene
     
     const startRotation = new THREE.Euler(0, 0, 0);
     const endRotation = new THREE.Euler(0, 0, 0);

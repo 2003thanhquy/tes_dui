@@ -43,49 +43,64 @@ export const getPerformanceLevel = (): 'high' | 'medium' | 'low' => {
 
 export const getPerformanceConfig = () => {
   const level = getPerformanceLevel();
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const isSmallScreen = window.innerWidth < 768 || window.innerHeight < 600;
+  
+  // More aggressive optimization for mobile
+  const isLowEndMobile = isMobile && (
+    navigator.hardwareConcurrency <= 4 ||
+    (navigator.deviceMemory && navigator.deviceMemory <= 4) ||
+    isSmallScreen
+  );
   
   return {
     snow: {
       high: 600,
       medium: 250,
-      low: 100  // Giảm từ 150 xuống 100 cho mobile mượt hơn
+      low: isLowEndMobile ? 60 : 100  // Even fewer particles on low-end mobile
     }[level],
     stars: {
       high: 5000,
       medium: 1500,
-      low: 500  // Giảm từ 800 xuống 500
+      low: isLowEndMobile ? 300 : 500  // Fewer stars on low-end mobile
     }[level],
     fireworks: {
       high: 200,
       medium: 80,
-      low: 30  // Giảm từ 50 xuống 30
+      low: isLowEndMobile ? 20 : 30  // Fewer fireworks on low-end mobile
     }[level],
     sparkles: {
       high: 300,
       medium: 100,
-      low: 40  // Giảm từ 75 xuống 40
+      low: isLowEndMobile ? 25 : 40  // Fewer sparkles on low-end mobile
     }[level],
-    enableBloom: level === 'high',  // Chỉ bật trên desktop high-end
-    enableShadows: level === 'high',
-    enableAurora: level === 'high',  // Tắt trên mobile để mượt hơn
-    enableContactShadows: level === 'high',
-    // Frame rate limiting
+    enableBloom: level === 'high' && !isMobile,  // Never on mobile
+    enableShadows: level === 'high' && !isMobile,  // Never on mobile
+    enableAurora: level === 'high' && !isMobile,  // Never on mobile
+    enableContactShadows: level === 'high' && !isMobile,  // Never on mobile
+    // Frame rate limiting - more aggressive on mobile
     targetFPS: {
       high: 60,
-      medium: 45,
-      low: 30  // Giới hạn 30fps cho mobile
+      medium: isMobile ? 30 : 45,  // Mobile medium = 30fps
+      low: isLowEndMobile ? 24 : 30  // Low-end mobile = 24fps
     }[level],
-    // 3D quality
+    // 3D quality - more aggressive on mobile
     pixelRatio: {
-      high: Math.min(window.devicePixelRatio, 2),  // Max 2x
-      medium: Math.min(window.devicePixelRatio, 1.5),  // Max 1.5x
-      low: 1  // 1x cho mobile
+      high: Math.min(window.devicePixelRatio, 2),
+      medium: isMobile ? 1 : Math.min(window.devicePixelRatio, 1.5),  // Mobile medium = 1x
+      low: isLowEndMobile ? 0.75 : 1  // Low-end mobile = 0.75x
     }[level],
     // Carousel settings
     carouselImages: {
       high: 0,  // All
-      medium: 7,
-      low: 4  // Chỉ 4 ảnh trên mobile
+      medium: isMobile ? 3 : 7,  // Mobile medium = 3 images
+      low: isLowEndMobile ? 2 : 4  // Low-end mobile = 2 images
+    }[level],
+    // Canvas performance
+    performance: {
+      high: 0.75,
+      medium: isMobile ? 0.5 : 0.65,  // Mobile medium = lower performance target
+      low: isLowEndMobile ? 0.4 : 0.5  // Low-end mobile = even lower
     }[level]
   };
 };

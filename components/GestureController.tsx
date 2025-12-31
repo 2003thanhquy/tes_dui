@@ -1051,8 +1051,8 @@ const GestureController: React.FC<GestureControllerProps> = ({
 
       {/* Preview is always visible when camera is active - no hide button */}
 
-      {/* Control Panel */}
-      <div className="fixed bottom-4 right-4 z-[200] flex flex-col items-end gap-2">
+      {/* Control Panel - Mobile optimized */}
+      <div className="fixed bottom-16 sm:bottom-20 md:bottom-4 right-2 sm:right-4 z-[200] flex flex-col items-end gap-2 safe-area-bottom">
       {/* Camera Toggle Button */}
       <button
         onClick={() => {
@@ -1062,7 +1062,7 @@ const GestureController: React.FC<GestureControllerProps> = ({
             startCamera();
           }
         }}
-        className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg transition-all duration-300 ${
+        className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-xl sm:text-2xl shadow-lg transition-all duration-300 min-w-[44px] min-h-[44px] ${
           isActive
             ? 'bg-red-600 hover:bg-red-700 text-white'
             : 'bg-white/20 hover:bg-white/30 text-white backdrop-blur-md'
@@ -1072,17 +1072,18 @@ const GestureController: React.FC<GestureControllerProps> = ({
         {isActive ? '📷' : '📹'}
       </button>
 
-      {/* Status indicator */}
+      {/* Status indicator - Mobile optimized */}
       {isActive && (
-        <div className="flex items-center gap-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full backdrop-blur-md">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          <span>Camera đang hoạt động</span>
+        <div className="flex items-center gap-1.5 sm:gap-2 bg-black/70 text-white text-[10px] sm:text-xs px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-full backdrop-blur-md">
+          <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse"></div>
+          <span className="hidden xs:inline">Camera đang hoạt động</span>
+          <span className="xs:hidden">Đang bật</span>
         </div>
       )}
 
-      {/* Error message */}
+      {/* Error message - Mobile optimized */}
       {error && (
-        <div className="bg-red-600/90 text-white text-xs px-3 py-2 rounded-lg backdrop-blur-md max-w-xs">
+        <div className="bg-red-600/90 text-white text-[10px] sm:text-xs px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg backdrop-blur-md max-w-[200px] sm:max-w-xs">
           {error}
         </div>
       )}

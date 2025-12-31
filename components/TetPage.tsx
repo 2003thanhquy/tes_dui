@@ -6,6 +6,7 @@ import { WishState, MusicState, ClickEffect } from '../types';
 import { generateRomanticWish } from '../services/geminiService';
 import { playPopSound, playSuccessSound } from '../utils/soundEffects';
 import { loadGalleryImages, preloadImages, GalleryImage } from '../utils/imageLoader';
+import { useResponsive } from '../hooks/useResponsive';
 
 // Tet-specific love messages for TRÂN
 const TET_LOVE_MESSAGES = [
@@ -35,7 +36,7 @@ const RANDOM_SURPRISE_MESSAGES = [
 ];
 
 // SIMULATION MODE: Set to false for production
-const IS_SIMULATION_MODE = true;
+const IS_SIMULATION_MODE = false;
 
 // Countdown Display Component
 const CountdownDisplay: React.FC<{ onFinish?: () => void; onNearEnd?: () => void }> = ({ onFinish, onNearEnd }) => {
@@ -44,11 +45,9 @@ const CountdownDisplay: React.FC<{ onFinish?: () => void; onNearEnd?: () => void
     const hasTriggeredNearEndRef = useRef(false);
 
     useEffect(() => {
-        // In simulation mode, set target to 25 seconds from now
-        if (IS_SIMULATION_MODE) {
-            const now = new Date();
-            targetDateRef.current = new Date(now.getTime() + 25000);
-        }
+        // Real countdown to Tet 2026 - Giao thừa (Midnight Jan 1, 2026 Vietnam time)
+        // Target: 2026-01-01T00:00:00+07:00 (Vietnam timezone)
+        targetDateRef.current = new Date('2026-01-01T00:00:00+07:00');
     }, []);
 
     useEffect(() => {
@@ -143,8 +142,8 @@ const TetPage: React.FC<TetPageProps> = ({ galleryImages: externalGalleryImages 
         TET_LOVE_MESSAGES[Math.floor(Math.random() * TET_LOVE_MESSAGES.length)]
     );
 
-    // Layout
-    const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
+    // Layout - Use responsive hook
+    const { isDesktop, isMobile, isSmallMobile } = useResponsive();
     const [carouselRadius, setCarouselRadius] = useState(4.5);
 
     // Time-based surprise effects
@@ -321,9 +320,7 @@ const TetPage: React.FC<TetPageProps> = ({ galleryImages: externalGalleryImages 
 
     // Resize Listener
     useEffect(() => {
-        const handleResize = () => setIsDesktop(window.innerWidth >= 768);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        // Resize handling is now done by useResponsive hook
     }, []);
 
     // Auto change heart photo
@@ -458,6 +455,10 @@ const TetPage: React.FC<TetPageProps> = ({ galleryImages: externalGalleryImages 
         setTimeout(() => setShowFireworks(false), 5000);
     };
 
+    const handleCloseEnvelope = () => {
+        setShowEnvelope(false);
+    };
+
     const handleZoom = useCallback((zoomDelta: number) => {
         setCarouselRadius(prev => Math.max(2.5, Math.min(7, prev + zoomDelta)));
     }, []);
@@ -481,12 +482,12 @@ const TetPage: React.FC<TetPageProps> = ({ galleryImages: externalGalleryImages 
                             Gửi TRÂN Yêu Thương
                         </h1>
                         <p className="text-amber-200/80 text-sm md:text-base mb-6">
-                            {IS_SIMULATION_MODE ? "Chế độ Test: Vào tiệc sau 25s..." : "Đếm ngược đến Giao thừa 2026"}
+                            Đếm ngược đến Giao thừa 2026
                         </p>
 
                         {/* Live countdown */}
                         <CountdownDisplay
-                            onFinish={IS_SIMULATION_MODE ? handleEnterParty : undefined}
+                            onFinish={handleEnterParty}
                             onNearEnd={handleCountdownInteraction} // Auto play music at 20s
                         />
 
@@ -507,7 +508,7 @@ const TetPage: React.FC<TetPageProps> = ({ galleryImages: externalGalleryImages 
 
                         {/* Autoplay Blocked Fallback Info */}
                         {autoplayBlocked && (
-                            <div className="absolute inset-0 z-[310] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-[fadeIn_0.3s_ease-out]">
+                            <div className="absolute inset-0 z-[310] flex items-center justify-center bg-red-950/80 backdrop-blur-sm animate-[fadeIn_0.3s_ease-out]">
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
@@ -554,6 +555,7 @@ const TetPage: React.FC<TetPageProps> = ({ galleryImages: externalGalleryImages 
                     onCloseLanternMessage={() => setLanternMessage(null)}
                     showEnvelope={showEnvelope}
                     onOpenEnvelope={handleOpenEnvelope}
+                    onCloseEnvelope={handleCloseEnvelope}
                     envelopeMessage={envelopeMessage}
                     surpriseMessage={surpriseMessage}
                     onCloseSurpriseMessage={() => setSurpriseMessage(null)}

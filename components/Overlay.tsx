@@ -393,29 +393,29 @@ const Overlay: React.FC<OverlayProps> = ({
           </div>
       )}
 
-      {/* Header - Compact, không che hero */}
-      <header className="absolute top-2 md:top-4 left-1/2 transform -translate-x-1/2 z-20 pointer-events-auto w-full max-w-4xl px-4">
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-vibes text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-amber-400 to-red-600 animate-shimmer drop-shadow-[0_2px_10px_rgba(220,38,38,0.4)] cursor-default text-center">
+      {/* Header - Optimized for mobile */}
+      <header className="absolute top-1 sm:top-2 md:top-4 left-1/2 transform -translate-x-1/2 z-20 pointer-events-auto w-full max-w-4xl px-2 sm:px-4">
+        <h1 className="text-base sm:text-xl md:text-2xl lg:text-3xl font-vibes text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-amber-400 to-red-600 animate-shimmer drop-shadow-[0_2px_10px_rgba(220,38,38,0.4)] cursor-default text-center leading-tight">
           Merry Christmas My Love ❤️
         </h1>
       </header>
 
-      {/* Gallery Button - Compact, ở góc */}
+      {/* Gallery Button - Optimized for mobile */}
       {!showPanel && !surpriseImage && (
         <button
           onClick={() => setShowPanel(true)}
-          className="fixed top-16 md:top-20 right-3 md:right-6 z-30 pointer-events-auto bg-gradient-to-r from-red-600/90 to-amber-600/90 hover:from-red-500 hover:to-amber-500 active:from-red-700 active:to-amber-700 text-white font-vibes text-sm md:text-base px-3 md:px-5 py-1.5 md:py-2 rounded-full shadow-[0_0_15px_rgba(220,38,38,0.5)] hover:shadow-[0_0_25px_rgba(220,38,38,0.7)] transition-all duration-300 hover:scale-110 active:scale-95 flex items-center gap-1.5 border border-white/20 touch-manipulation backdrop-blur-sm"
+          className="fixed top-12 sm:top-16 md:top-20 right-2 sm:right-3 md:right-6 z-30 pointer-events-auto bg-gradient-to-r from-red-600/90 to-amber-600/90 hover:from-red-500 hover:to-amber-500 active:from-red-700 active:to-amber-700 text-white font-vibes text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-2 rounded-full shadow-[0_0_15px_rgba(220,38,38,0.5)] hover:shadow-[0_0_25px_rgba(220,38,38,0.7)] transition-all duration-300 hover:scale-110 active:scale-95 flex items-center gap-1.5 sm:gap-2 border border-white/20 touch-manipulation backdrop-blur-sm min-h-[44px] min-w-[44px]"
           aria-label="Mở Gallery và AI Wish Generator"
         >
-          <span className="text-lg md:text-xl">📷</span>
-          <span className="hidden sm:inline">Gallery</span>
+          <span className="text-base sm:text-lg md:text-xl">📷</span>
+          <span className="hidden xs:inline sm:inline">Gallery</span>
         </button>
       )}
 
       {/* Hidden Hotspots - Click anywhere to discover */}
       {!surpriseImage && !showPanel && (
         <>
-          {/* Hotspot 1 - Top Left */}
+          {/* Hotspot 1 - Top Left - Optimized for mobile */}
           <div
             onClick={() => {
               if (onHotspotClick) onHotspotClick(1);
@@ -423,7 +423,7 @@ const Overlay: React.FC<OverlayProps> = ({
               setSurpriseImage(randomImage);
               setHotspotClicked(true);
             }}
-            className="fixed top-16 left-4 md:top-20 md:left-10 w-14 h-14 md:w-20 md:h-20 rounded-full bg-red-600/0 active:bg-red-600/20 cursor-pointer transition-all duration-300 group z-30 pointer-events-auto active:scale-110 md:hover:scale-125 md:hover:rotate-12 touch-manipulation"
+            className="fixed top-12 sm:top-16 md:top-20 left-2 sm:left-4 md:left-10 w-12 h-12 sm:w-14 sm:h-14 md:w-20 md:h-20 rounded-full bg-red-600/0 active:bg-red-600/20 cursor-pointer transition-all duration-300 group z-30 pointer-events-auto active:scale-110 md:hover:scale-125 md:hover:rotate-12 touch-manipulation min-w-[44px] min-h-[44px]"
             style={{
               filter: 'drop-shadow(0 0 20px rgba(220, 38, 38, 0.6))'
             }}
@@ -432,12 +432,12 @@ const Overlay: React.FC<OverlayProps> = ({
             tabIndex={0}
           >
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-2xl md:text-4xl opacity-30 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 animate-pulse transition-opacity group-active:scale-125 md:group-hover:scale-125">💝</div>
+              <div className="text-xl sm:text-2xl md:text-4xl opacity-40 sm:opacity-30 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 animate-pulse transition-opacity group-active:scale-125 md:group-hover:scale-125">💝</div>
             </div>
             <div className="absolute inset-0 rounded-full border-2 border-red-600/30 group-hover:border-red-600/60 animate-ping group-hover:shadow-[0_0_30px_rgba(220,38,38,0.8)]"></div>
           </div>
 
-          {/* Hotspot 2 - Top Right */}
+          {/* Hotspot 2 - Top Right - Optimized for mobile */}
           <div
             onClick={() => {
               if (onHotspotClick) onHotspotClick(2);
@@ -445,7 +445,7 @@ const Overlay: React.FC<OverlayProps> = ({
               setSurpriseImage(randomImage);
               setHotspotClicked(true);
             }}
-            className="fixed top-24 right-4 md:top-32 md:right-16 w-12 h-12 md:w-16 md:h-16 rounded-full bg-amber-500/0 active:bg-amber-500/20 cursor-pointer transition-all duration-300 group z-30 pointer-events-auto active:scale-110 md:hover:scale-125 md:hover:-rotate-12 touch-manipulation"
+            className="fixed top-20 sm:top-24 md:top-32 right-2 sm:right-4 md:right-16 w-12 h-12 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full bg-amber-500/0 active:bg-amber-500/20 cursor-pointer transition-all duration-300 group z-30 pointer-events-auto active:scale-110 md:hover:scale-125 md:hover:-rotate-12 touch-manipulation min-w-[44px] min-h-[44px]"
             style={{
               filter: 'drop-shadow(0 0 20px rgba(245, 158, 11, 0.6))'
             }}
@@ -454,12 +454,12 @@ const Overlay: React.FC<OverlayProps> = ({
             tabIndex={0}
           >
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-xl md:text-3xl opacity-30 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 animate-pulse transition-opacity group-active:scale-125 md:group-hover:scale-125">✨</div>
+              <div className="text-lg sm:text-xl md:text-3xl opacity-40 sm:opacity-30 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 animate-pulse transition-opacity group-active:scale-125 md:group-hover:scale-125">✨</div>
             </div>
             <div className="absolute inset-0 rounded-full border-2 border-amber-500/30 group-hover:border-amber-500/60 animate-ping group-hover:shadow-[0_0_30px_rgba(245,158,11,0.8)]"></div>
           </div>
 
-          {/* Hotspot 3 - Bottom Left */}
+          {/* Hotspot 3 - Bottom Left - Optimized for mobile */}
           <div
             onClick={() => {
               if (onHotspotClick) onHotspotClick(3);
@@ -467,7 +467,7 @@ const Overlay: React.FC<OverlayProps> = ({
               setSurpriseImage(randomImage);
               setHotspotClicked(true);
             }}
-            className="fixed bottom-24 left-4 md:bottom-32 md:left-20 w-16 h-16 md:w-24 md:h-24 rounded-full bg-red-500/0 active:bg-red-500/20 cursor-pointer transition-all duration-300 group z-30 pointer-events-auto active:scale-110 md:hover:scale-125 md:hover:rotate-12 touch-manipulation"
+            className="fixed bottom-20 sm:bottom-24 md:bottom-32 left-2 sm:left-4 md:left-20 w-14 h-14 sm:w-16 sm:h-16 md:w-24 md:h-24 rounded-full bg-red-500/0 active:bg-red-500/20 cursor-pointer transition-all duration-300 group z-30 pointer-events-auto active:scale-110 md:hover:scale-125 md:hover:rotate-12 touch-manipulation min-w-[44px] min-h-[44px]"
             style={{
               filter: 'drop-shadow(0 0 20px rgba(239, 68, 68, 0.6))'
             }}
@@ -476,7 +476,7 @@ const Overlay: React.FC<OverlayProps> = ({
             tabIndex={0}
           >
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-3xl md:text-5xl opacity-30 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 animate-pulse transition-opacity group-active:scale-125 md:group-hover:scale-125">❤️</div>
+              <div className="text-2xl sm:text-3xl md:text-5xl opacity-40 sm:opacity-30 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 animate-pulse transition-opacity group-active:scale-125 md:group-hover:scale-125">❤️</div>
             </div>
             <div className="absolute inset-0 rounded-full border-2 border-red-500/30 group-hover:border-red-500/60 animate-ping group-hover:shadow-[0_0_30px_rgba(239,68,68,0.8)]"></div>
           </div>
@@ -517,8 +517,8 @@ const Overlay: React.FC<OverlayProps> = ({
             }
           }}
         >
-          <div 
-            className="relative bg-gradient-to-br from-red-800/95 via-red-700/95 to-amber-900/95 backdrop-blur-xl p-4 md:p-8 rounded-2xl md:rounded-3xl shadow-[0_0_100px_rgba(185,28,28,0.8)] max-w-2xl w-full mx-2 border-2 md:border-4 border-red-500/50 animate-[popIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)] max-h-[90vh] overflow-y-auto"
+            <div 
+            className="relative bg-gradient-to-br from-red-800/95 via-red-700/95 to-amber-900/95 backdrop-blur-xl p-3 sm:p-4 md:p-8 rounded-2xl md:rounded-3xl shadow-[0_0_100px_rgba(185,28,28,0.8)] max-w-2xl w-full mx-1 sm:mx-2 border-2 md:border-4 border-red-500/50 animate-[popIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)] max-h-[95vh] sm:max-h-[90vh] overflow-y-auto safe-area-inset"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Decorative elements - Đặt sau close button để không che */}
@@ -612,30 +612,31 @@ const Overlay: React.FC<OverlayProps> = ({
           />
         )}
 
-        {/* Right Editor - Slide Panel */}
+        {/* Right Editor - Slide Panel - Optimized for mobile */}
         <div 
-          className={`fixed right-0 top-0 h-full w-full sm:w-80 md:w-96 pointer-events-auto z-30 transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+          className={`fixed right-0 top-0 h-full w-full sm:w-80 md:w-96 pointer-events-auto z-30 transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] safe-area-inset ${
             showPanel ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
-          <div className="h-full overflow-y-auto pr-2 custom-scrollbar bg-gradient-to-b from-black/95 via-red-950/90 to-amber-950/90 backdrop-blur-xl border-l-2 border-red-600/30 shadow-[0_0_50px_rgba(185,28,28,0.5)]">
-            {/* Decorative Header */}
-            <div className="sticky top-0 bg-gradient-to-r from-red-800/50 to-amber-800/50 backdrop-blur-md border-b border-red-600/30 p-3 md:p-4 z-10">
+          <div className="h-full overflow-y-auto pr-1 sm:pr-2 custom-scrollbar bg-gradient-to-b from-black/95 via-red-950/90 to-amber-950/90 backdrop-blur-xl border-l-2 border-red-600/30 shadow-[0_0_50px_rgba(185,28,28,0.5)]">
+            {/* Decorative Header - Mobile optimized */}
+            <div className="sticky top-0 bg-gradient-to-r from-red-800/50 to-amber-800/50 backdrop-blur-md border-b border-red-600/30 p-2.5 sm:p-3 md:p-4 z-10 safe-area-top">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl md:text-2xl animate-pulse">✨</span>
-                  <h2 className="text-base md:text-xl font-vibes text-white">Kỷ niệm yêu thương</h2>
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="text-lg sm:text-xl md:text-2xl animate-pulse">✨</span>
+                  <h2 className="text-sm sm:text-base md:text-xl font-vibes text-white">Kỷ niệm yêu thương</h2>
                 </div>
                 <button
                   onClick={() => setShowPanel(false)}
-                  className="w-10 h-10 md:w-8 md:h-8 rounded-full bg-red-500/80 hover:bg-red-500 active:bg-red-600 text-white text-xl md:text-lg flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all duration-300 touch-manipulation"
+                  className="w-11 h-11 sm:w-10 sm:h-10 md:w-8 md:h-8 rounded-full bg-red-500/80 hover:bg-red-500 active:bg-red-600 text-white text-lg sm:text-xl md:text-lg flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all duration-300 touch-manipulation min-w-[44px] min-h-[44px]"
+                  aria-label="Đóng panel"
                 >
                   ×
                 </button>
               </div>
             </div>
             
-            <div className="p-3 md:p-4">
+            <div className="p-2.5 sm:p-3 md:p-4">
                 {/* AI Wish - Cải thiện hiển thị */}
                 <div className="mb-4 md:mb-6 bg-gradient-to-r from-red-950/50 to-amber-950/50 rounded-lg md:rounded-xl p-4 md:p-6 border-2 border-red-600/30 group hover:border-red-500/60 transition-all duration-300 shadow-lg hover:shadow-[0_0_20px_rgba(220,38,38,0.4)]">
                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-3 gap-3">
@@ -667,7 +668,7 @@ const Overlay: React.FC<OverlayProps> = ({
                 <div className="mb-4">
                     <h2 className="text-base md:text-xl font-bold text-white mb-3 md:mb-4 flex items-center gap-2">
                         📷 Kỷ niệm yêu thương
-                    </h2>
+                </h2>
                     <div className="relative">
                         <div className="overflow-hidden rounded-xl md:rounded-2xl bg-gradient-to-br from-red-950/30 to-amber-950/30 border border-red-600/20">
                             <div className="relative h-48 sm:h-64 md:h-80 overflow-hidden">
@@ -766,30 +767,31 @@ const Overlay: React.FC<OverlayProps> = ({
                         </button>
                     </div>
                 </div>
-            </div>
-          </div>
+                </div>
+           </div>
         </div>
       </main>
 
-      {/* Footer: Music Player with Visualizer */}
-      <footer className="w-full bg-gradient-to-t from-black via-black/80 to-transparent p-2 md:p-4 pointer-events-auto z-20">
-        <div className="max-w-md mx-auto flex items-center justify-between gap-2 md:gap-4 bg-white/5 backdrop-blur-md rounded-full px-3 md:px-4 py-2 border border-white/10 shadow-lg hover:bg-white/10 transition-colors duration-300">
+      {/* Footer: Music Player with Visualizer - Mobile optimized */}
+      <footer className="w-full bg-gradient-to-t from-black via-black/80 to-transparent p-2 sm:p-3 md:p-4 pointer-events-auto z-20 safe-area-bottom">
+        <div className="max-w-md mx-auto flex items-center justify-between gap-2 sm:gap-3 md:gap-4 bg-white/5 backdrop-blur-md rounded-full px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 border border-white/10 shadow-lg hover:bg-white/10 transition-colors duration-300">
             
             <button 
                 onClick={onToggleMusic} 
-                className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-full transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-90 touch-manipulation ${musicState.playing ? 'bg-red-600 scale-110 shadow-[0_0_20px_#dc2626]' : 'bg-gray-700 hover:bg-gray-600 hover:scale-110'}`}
+                className={`w-11 h-11 sm:w-12 sm:h-12 md:w-12 md:h-12 flex items-center justify-center rounded-full transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-90 touch-manipulation min-w-[44px] min-h-[44px] ${musicState.playing ? 'bg-red-600 scale-110 shadow-[0_0_20px_#dc2626]' : 'bg-gray-700 hover:bg-gray-600 hover:scale-110'}`}
+                aria-label={musicState.playing ? 'Tắt nhạc' : 'Bật nhạc'}
             >
               {musicState.playing ? (
-                  <div className="flex items-end gap-[2px] h-4">
-                      <div className="w-1 bg-white animate-[bounce_0.5s_infinite] h-2"></div>
-                      <div className="w-1 bg-white animate-[bounce_0.7s_infinite] h-4"></div>
-                      <div className="w-1 bg-white animate-[bounce_0.6s_infinite] h-3"></div>
+                  <div className="flex items-end gap-[2px] h-3 sm:h-4">
+                      <div className="w-0.5 sm:w-1 bg-white animate-[bounce_0.5s_infinite] h-1.5 sm:h-2"></div>
+                      <div className="w-0.5 sm:w-1 bg-white animate-[bounce_0.7s_infinite] h-3 sm:h-4"></div>
+                      <div className="w-0.5 sm:w-1 bg-white animate-[bounce_0.6s_infinite] h-2 sm:h-3"></div>
                   </div>
-              ) : <span className="text-sm md:text-base">▶</span>}
+              ) : <span className="text-xs sm:text-sm md:text-base">▶</span>}
             </button>
             
-            <div className="flex-1 text-center group cursor-default min-w-0">
-                <p className={`text-[10px] md:text-xs text-amber-200 transition-all duration-300 truncate ${musicState.playing ? 'animate-pulse scale-105' : 'group-hover:text-amber-100'}`}>
+            <div className="flex-1 text-center group cursor-default min-w-0 px-1 sm:px-2">
+                <p className={`text-[9px] sm:text-[10px] md:text-xs text-amber-200 transition-all duration-300 truncate ${musicState.playing ? 'animate-pulse scale-105' : 'group-hover:text-amber-100'}`}>
                     Wednesday (Bloody Mary) - Kyrix Remix
                 </p>
             </div>
@@ -798,12 +800,13 @@ const Overlay: React.FC<OverlayProps> = ({
                type="range" min="0" max="1" step="0.05" 
                value={musicState.volume}
                onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
-               className="w-16 md:w-20 h-1 md:h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer hover:bg-white/40 accent-red-600 transition-all active:scale-y-125 touch-manipulation"
+               className="w-14 sm:w-16 md:w-20 h-1.5 sm:h-1 md:h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer hover:bg-white/40 accent-red-600 transition-all active:scale-y-125 touch-manipulation"
+               aria-label="Điều chỉnh âm lượng"
              />
         </div>
       </footer>
     </div>
-
+    
     {/* Gallery Lightbox Modal - Chỉ hiển thị khi không có gift modal */}
     {selectedGalleryImage && !selectedGiftMessage && (
         <div 
@@ -826,7 +829,7 @@ const Overlay: React.FC<OverlayProps> = ({
             }}
         >
             <div 
-                className="relative bg-gradient-to-br from-red-950/90 via-red-900/90 to-amber-950/90 backdrop-blur-lg p-4 md:p-6 rounded-xl md:rounded-2xl shadow-[0_0_80px_rgba(185,28,28,0.6)] max-w-4xl w-full mx-2 max-h-[90vh] overflow-y-auto border-2 border-red-600/30 animate-[popIn_0.4s_cubic-bezier(0.34,1.56,0.64,1)] flex flex-col"
+                className="relative bg-gradient-to-br from-red-950/90 via-red-900/90 to-amber-950/90 backdrop-blur-lg p-3 sm:p-4 md:p-6 rounded-xl md:rounded-2xl shadow-[0_0_80px_rgba(185,28,28,0.6)] max-w-4xl w-full mx-1 sm:mx-2 max-h-[95vh] sm:max-h-[90vh] overflow-y-auto border-2 border-red-600/30 animate-[popIn_0.4s_cubic-bezier(0.34,1.56,0.64,1)] flex flex-col safe-area-inset"
                 onClick={(e) => {
                     e.stopPropagation();
                     // Reset interaction time khi click vào modal
@@ -890,22 +893,23 @@ const Overlay: React.FC<OverlayProps> = ({
                         // Reset interaction time khi hover
                         galleryLastInteractionRef.current = Date.now();
                     }}
-                    className="absolute top-2 md:top-4 right-2 md:right-4 text-white/80 hover:text-white text-2xl md:text-3xl w-12 h-12 md:w-14 md:h-14 flex items-center justify-center rounded-full hover:bg-white/20 active:bg-white/30 transition-all duration-300 hover:scale-110 active:scale-90 z-50 cursor-pointer touch-manipulation shadow-lg"
+                    className="absolute top-1.5 sm:top-2 md:top-4 right-1.5 sm:right-2 md:right-4 text-white/80 hover:text-white text-xl sm:text-2xl md:text-3xl w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center rounded-full hover:bg-white/20 active:bg-white/30 transition-all duration-300 hover:scale-110 active:scale-90 z-50 cursor-pointer touch-manipulation shadow-lg min-w-[44px] min-h-[44px]"
+                    aria-label="Đóng"
                 >
                     &times;
                 </button>
                 
-                {/* Auto-close indicator */}
-                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-amber-300/70 text-[10px] md:text-xs animate-pulse z-50">
+                {/* Auto-close indicator - Mobile optimized */}
+                <div className="absolute bottom-1 sm:bottom-2 left-1/2 transform -translate-x-1/2 text-amber-300/70 text-[9px] sm:text-[10px] md:text-xs animate-pulse z-50 text-center px-2">
                     Tự động đóng sau 10 giây nếu không tương tác
                 </div>
                 
-                {/* Image */}
-                <div className="flex-1 flex items-center justify-center overflow-hidden rounded-lg md:rounded-xl mb-3 md:mb-4 bg-black/20 p-2 md:p-0">
+                {/* Image - Mobile optimized */}
+                <div className="flex-1 flex items-center justify-center overflow-hidden rounded-lg md:rounded-xl mb-2 sm:mb-3 md:mb-4 bg-black/20 p-1.5 sm:p-2 md:p-0">
                     <img
                         src={selectedGalleryImage.url}
                         alt={selectedGalleryImage.title}
-                        className="max-w-full max-h-[60vh] md:max-h-[70vh] object-contain rounded-lg shadow-2xl"
+                        className="max-w-full max-h-[50vh] sm:max-h-[60vh] md:max-h-[70vh] object-contain rounded-lg shadow-2xl"
                         style={{
                           imageRendering: '-webkit-optimize-contrast' as any
                         }}
@@ -917,9 +921,9 @@ const Overlay: React.FC<OverlayProps> = ({
                     />
                 </div>
                 
-                {/* Content */}
-                <div className="text-center px-2 md:px-4 pb-2">
-                    <h3 className="text-lg md:text-2xl font-vibes text-white mb-2 md:mb-3 drop-shadow-lg font-loaded" style={{
+                {/* Content - Mobile optimized */}
+                <div className="text-center px-1.5 sm:px-2 md:px-4 pb-1.5 sm:pb-2">
+                    <h3 className="text-base sm:text-lg md:text-2xl font-vibes text-white mb-1.5 sm:mb-2 md:mb-3 drop-shadow-lg font-loaded leading-tight" style={{
                       textShadow: '2px 2px 6px rgba(0,0,0,0.9), 0 0 15px rgba(0,0,0,0.6)',
                       WebkitFontSmoothing: 'antialiased',
                       MozOsxFontSmoothing: 'grayscale',
@@ -928,7 +932,7 @@ const Overlay: React.FC<OverlayProps> = ({
                     }}>
                         {selectedGalleryImage.title}
                     </h3>
-                    <div className="font-vibes text-sm md:text-lg lg:text-xl text-amber-200 mb-2 md:mb-3 leading-relaxed font-loaded" style={{
+                    <div className="font-vibes text-xs sm:text-sm md:text-lg lg:text-xl text-amber-200 mb-1.5 sm:mb-2 md:mb-3 leading-relaxed font-loaded" style={{
                       textShadow: '1px 1px 4px rgba(0,0,0,0.8)',
                       WebkitFontSmoothing: 'antialiased',
                       MozOsxFontSmoothing: 'grayscale',
@@ -937,7 +941,7 @@ const Overlay: React.FC<OverlayProps> = ({
                     }}>
                         <TypewriterText text={selectedGalleryImage.message} />
                     </div>
-                    <div className="w-20 md:w-24 h-0.5 md:h-1 bg-amber-400/50 mx-auto rounded-full"></div>
+                    <div className="w-16 sm:w-20 md:w-24 h-0.5 md:h-1 bg-amber-400/50 mx-auto rounded-full"></div>
                 </div>
             </div>
         </div>
@@ -1191,14 +1195,14 @@ const Overlay: React.FC<OverlayProps> = ({
           <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 text-5xl md:text-6xl animate-bounce pointer-events-none">🎄</div>
           <div className="absolute top-4 right-4 text-2xl md:text-3xl animate-pulse pointer-events-none">✨</div>
           
-          {/* Close button */}
-          <button 
-            onClick={handleTutorialSkip}
-            className="absolute top-3 md:top-4 right-3 md:right-4 text-white/90 hover:text-white text-2xl md:text-3xl w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-full bg-red-600/80 hover:bg-red-600 border-2 border-white/50 shadow-lg transition-all duration-300 hover:scale-110 active:scale-90 z-50 cursor-pointer touch-manipulation"
-            aria-label="Bỏ qua hướng dẫn"
-          >
-            ×
-          </button>
+            {/* Close button - Mobile optimized */}
+            <button 
+              onClick={handleTutorialSkip}
+              className="absolute top-2 sm:top-3 md:top-4 right-2 sm:right-3 md:right-4 text-white/90 hover:text-white text-xl sm:text-2xl md:text-3xl w-11 h-11 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center rounded-full bg-red-600/80 hover:bg-red-600 border-2 border-white/50 shadow-lg transition-all duration-300 hover:scale-110 active:scale-90 z-50 cursor-pointer touch-manipulation min-w-[44px] min-h-[44px]"
+              aria-label="Bỏ qua hướng dẫn"
+            >
+              ×
+            </button>
           
           {/* Content */}
           <div className="text-center pt-8 md:pt-12">
@@ -1286,7 +1290,7 @@ const Overlay: React.FC<OverlayProps> = ({
             </div>
           </div>
         </div>
-      </div>
+        </div>
     )}
 
     </>
