@@ -24,6 +24,7 @@ interface TetSceneProps {
     carouselImages?: GalleryImage[];
     onCarouselPhotoClick?: (image: GalleryImage) => void;
     carouselRadius?: number;
+    fireworksIntensity?: 'normal' | 'high';
 }
 
 // Lucky Red Envelope 3D (Lì xì)
@@ -130,7 +131,7 @@ const BanhChung: React.FC<{ position: [number, number, number] }> = ({ position 
 
 // 3D Text "TRÂN" with special effects using drei Text
 
-const TranText3D: React.FC<{ position: [number, number, number] }> = ({ position }) => {
+const TranText3D: React.FC<{ position: [number, number, number]; isDesktop?: boolean }> = ({ position, isDesktop = true }) => {
     const [hovered, setHovered] = useState(false);
 
     return (
@@ -153,16 +154,17 @@ const TranText3D: React.FC<{ position: [number, number, number] }> = ({ position
                     />
                 </mesh>
 
-                {/* 3D Text TRÂN - LARGER */}
+                {/* 3D Text TRÂN - Responsive */}
                 <Center>
                     <Text
-                        fontSize={2.5}
+                        fontSize={isDesktop ? 2.5 : 1.8}
                         color="#fbbf24"
                         anchorX="center"
                         anchorY="middle"
-                        outlineWidth={0.1}
+                        outlineWidth={isDesktop ? 0.1 : 0.08}
                         outlineColor="#dc2626"
-                        letterSpacing={0.1}
+                        letterSpacing={0.2}
+                        maxWidth={isDesktop ? 10 : 8}
                     >
                         TRÂN
                         <meshStandardMaterial
@@ -176,15 +178,15 @@ const TranText3D: React.FC<{ position: [number, number, number] }> = ({ position
                 </Center>
 
                 {/* Heart symbols around */}
-                <Center position={[0, -1.8, 0]}>
-                    <Text fontSize={0.8} anchorX="center" anchorY="middle">
+                <Center position={[0, isDesktop ? -1.8 : -1.4, 0]}>
+                    <Text fontSize={isDesktop ? 0.8 : 0.6} anchorX="center" anchorY="middle">
                         ❤️ YÊU EM ❤️
                         <meshStandardMaterial color="#f472b6" emissive="#ec4899" emissiveIntensity={1.5} />
                     </Text>
                 </Center>
 
                 {/* Decorative glowing ring around text */}
-                <mesh rotation={[0, 0, 0]}>
+                <mesh rotation={[0, 0, 0]} scale={isDesktop ? 1 : 0.8}>
                     <torusGeometry args={[2.5, 0.05, 16, 100]} />
                     <meshStandardMaterial
                         color="#f472b6"
@@ -198,7 +200,7 @@ const TranText3D: React.FC<{ position: [number, number, number] }> = ({ position
                 {/* Orbiting particles */}
                 {[...Array(12)].map((_, i) => {
                     const angle = (i / 12) * Math.PI * 2;
-                    const radius = 2.8;
+                    const radius = isDesktop ? 2.8 : 2.2;
                     return (
                         <Float key={i} speed={3} floatIntensity={0.3}>
                             <mesh position={[Math.cos(angle) * radius, Math.sin(angle) * radius, 0]}>
@@ -240,20 +242,33 @@ const TetScene: React.FC<TetSceneProps> = ({
     currentHeartPhotoIndex = 0,
     carouselImages = [],
     onCarouselPhotoClick,
-    carouselRadius = 4.5
+    carouselRadius = 4.5,
+    fireworksIntensity = 'normal'
 }) => {
-    const [fireworksPositions] = useState<Array<[number, number, number]>>([
-        [0, 4, 0],
-        [-3, 5, -2],
-        [3, 5, 2],
-        [-2, 6, 1],
-        [2, 6, -1]
-    ]);
+    // Dynamic fireworks positions based on intensity
+    const fireworksPositions = useMemo(() => {
+        if (fireworksIntensity === 'high') {
+            // Generate 15-20 random positions for Grand Opening
+            return [...Array(18)].map(() => [
+                (Math.random() - 0.5) * 16, // X: -8 to 8
+                2 + Math.random() * 6,      // Y: 2 to 8
+                -5 + Math.random() * 6      // Z: -5 to 1
+            ] as [number, number, number]);
+        }
+        // Normal mode: 5 fixed positions
+        return [
+            [0, 4, 0],
+            [-3, 5, -2],
+            [3, 5, 2],
+            [-2, 6, 1],
+            [2, 6, -1]
+        ] as [number, number, number][];
+    }, [fireworksIntensity]);
 
     const perfConfig = useMemo(() => getPerformanceConfig(), []);
 
     return (
-        <div className="w-full h-full absolute inset-0 z-0 bg-gradient-to-b from-[#1a0505] via-[#2d0a0a] to-[#3d1010]">
+        <div className="w-full h-full absolute inset-0 z-0 bg-gradient-to-b from-[#450a0a] via-[#7f1d1d] to-[#991b1b]">
             <Canvas
                 shadows={perfConfig.enableShadows}
                 camera={{ position: isDesktop ? [0, 0, 12] : [0, 0, 16], fov: isDesktop ? 50 : 65 }} // Mobile: xa hơn, góc rộng hơn
@@ -261,8 +276,8 @@ const TetScene: React.FC<TetSceneProps> = ({
                 frameloop="always"
                 performance={{ min: 0.75 }}
             >
-                <color attach="background" args={['#1a0505']} />
-                <fog attach="fog" args={['#1a0505', 8, 25]} />
+                <color attach="background" args={['#450a0a']} />
+                <fog attach="fog" args={['#450a0a', 10, 40]} />
 
                 <CameraController isDesktop={isDesktop} />
 
@@ -297,7 +312,10 @@ const TetScene: React.FC<TetSceneProps> = ({
 
                     {/* TRÂN - Special text effect - Mobile: Higher to avoid overlap */}
                     <group scale={isDesktop ? 1 : 0.8}>
-                        <TranText3D position={isDesktop ? [0, 3.5, 3] : [0, 4, 1]} />
+                        <TranText3D
+                            position={isDesktop ? [0, 3.5, 3] : [0, 4, 1]}
+                            isDesktop={isDesktop}
+                        />
                     </group>
 
                     {/* Heart Photo Frame */}

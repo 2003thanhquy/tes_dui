@@ -182,12 +182,12 @@ const LoveEnvelope: React.FC<{
                     </div>
 
                     {/* Hint text */}
-                    <div className="mt-4 text-amber-200 text-sm md:text-base font-vibes animate-bounce">
+                    <div className="mt-4 text-amber-200 text-xs md:text-base font-vibes animate-bounce bg-black/30 px-2 rounded-full">
                         📩 Nhấn để mở thư tình
                     </div>
                 </div>
             ) : (
-                // Open envelope with message
+                // Open envelope with message - Optimized for mobile
                 <div className="animate-[popIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)]">
                     {/* Confetti animation */}
                     <div className="absolute inset-0 pointer-events-none">
@@ -205,8 +205,8 @@ const LoveEnvelope: React.FC<{
                         ))}
                     </div>
 
-                    {/* Message card */}
-                    <div className="relative bg-gradient-to-br from-amber-50 to-amber-100 p-6 md:p-8 rounded-2xl shadow-[0_0_40px_rgba(251,191,36,0.5)] border-4 border-amber-400 max-w-sm">
+                    {/* Message card - Responsive Size */}
+                    <div className="relative bg-gradient-to-br from-amber-50 to-amber-100 p-5 md:p-8 rounded-2xl shadow-[0_0_40px_rgba(251,191,36,0.5)] border-4 border-amber-400 max-w-[85vw] w-80 md:w-96 max-h-[70vh] overflow-y-auto custom-scrollbar">
                         {/* Decorative header */}
                         <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-red-600 px-4 py-1 rounded-full border-2 border-amber-400">
                             <span className="text-white font-vibes text-sm">💌 Thư tình</span>
@@ -216,15 +216,15 @@ const LoveEnvelope: React.FC<{
                         <div className="absolute top-2 right-2 text-2xl animate-pulse">❤️</div>
                         <div className="absolute bottom-2 left-2 text-xl animate-pulse" style={{ animationDelay: '0.5s' }}>💕</div>
 
-                        {/* Message content */}
+                        {/* Message content - Responsive Font */}
                         <div className="text-center pt-4">
-                            <div className="font-vibes text-xl md:text-2xl text-red-700 leading-relaxed">
+                            <div className="font-vibes text-lg md:text-2xl text-red-700 leading-relaxed">
                                 <TypewriterText text={message} />
                             </div>
                         </div>
 
                         {/* Signature */}
-                        <div className="mt-6 text-right font-vibes text-red-600 text-lg">
+                        <div className="mt-6 text-right font-vibes text-red-600 text-base md:text-lg">
                             - Người yêu em 💝
                         </div>
                     </div>
@@ -274,10 +274,10 @@ const InteractiveLuckyCards: React.FC<{ onReveal: (msg: string) => void }> = ({ 
             </div>
 
             {popup && (
-                <div className="absolute -top-12 md:-top-14 left-1/2 -translate-x-1/2 z-50 animate-[popIn_0.3s_ease-out]">
-                    <div className="bg-white px-3 py-2 md:px-4 md:py-2 rounded-lg shadow-xl border-2 border-amber-400 min-w-[140px]">
+                <div className="absolute -top-12 md:-top-14 left-1/2 -translate-x-1/2 z-50 animate-[popIn_0.3s_ease-out] w-max max-w-[200px]">
+                    <div className="bg-white px-3 py-2 md:px-4 md:py-2 rounded-lg shadow-xl border-2 border-amber-400">
                         <div className="font-bold text-red-600 text-xs md:text-sm text-center">{popup.title}</div>
-                        <div className="text-red-700 text-[10px] md:text-xs text-center mt-0.5">{popup.message}</div>
+                        <div className="text-red-700 text-[10px] md:text-xs text-center mt-0.5 leading-tight">{popup.message}</div>
                     </div>
                 </div>
             )}
@@ -402,9 +402,9 @@ const TetOverlay: React.FC<TetOverlayProps> = ({
                 </header>
 
                 {/* ===== CTA - Interactive Cards (moved up for mobile) ===== */}
-                <div className="absolute top-20 md:top-28 left-1/2 transform -translate-x-1/2 z-20 pointer-events-auto">
+                <div className="absolute top-20 md:top-28 left-1/2 transform -translate-x-1/2 z-20 pointer-events-auto scale-90 md:scale-100 origin-top">
                     <div className="text-center mb-1">
-                        <span className="text-amber-200/80 text-[10px] md:text-xs bg-black/40 px-2 py-0.5 rounded-full">
+                        <span className="text-amber-200/80 text-[10px] md:text-xs bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-sm">
                             🎁 Nhấn thẻ để nhận quà
                         </span>
                     </div>
